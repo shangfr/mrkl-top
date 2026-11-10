@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>什么是 MRKL？模块化推理、知识与语言架构全解 | MRKL.top</title>
+  <meta name="description" content="MRKL（Modular Reasoning, Knowledge and Language）是 AI21 Labs 于 2022 年提出的模块化神经符号架构：路由器 + 专家模块，让 LLM 与知识库、计算工具、专家模型分工协作。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › 什么是 MRKL</div>
+    <h1>什么是 MRKL？模块化推理、知识与语言架构全解</h1>
+    <p class="lede">MRKL（Modular Reasoning, Knowledge and Language，模块化推理、知识与语言）是一种用于构建 AI 智能体的神经符号混合架构，由 AI21 Labs 于 2022 年提出。本篇文章讲清它的核心思想、工作流程与适用场景。</p>
+    <p class="meta">2026-11-10 · 约 6 分钟 · 标签：入门 / 概念</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#idea">核心思想：路由器 + 专家模块</a></li>
+        <li><a href="#flow">工作流程</a></li>
+        <li><a href="#vs-react">与 ReAct 的定位差异</a></li>
+        <li><a href="#why">为什么要用 MRKL</a></li>
+        <li><a href="#conclusion">总结</a></li>
+      </ul>
+    </div>
+
+    <h2 id="idea">核心思想：路由器 + 专家模块</h2>
+    <p>MRKL 的出发点是一个朴素但重要的判断：<strong>不该把所有能力都塞进一个大语言模型里</strong>。数学计算会算错，事实查询会幻觉，垂直领域需要专门的知识——与其让通用 LLM 硬扛，不如把它拆成两类组件，各司其职：</p>
+    <ul>
+      <li><strong>路由器（Router）</strong>——由 LLM 充当。负责理解用户输入、判断该调用哪个模块，并把任务分发出去。</li>
+      <li><strong>专家模块（Expert Modules）</strong>——一系列专业化组件，包括：
+        <ul>
+          <li><strong>专家 LLM</strong>：针对特定领域微调的模型（法律、医疗、数学等）；</li>
+          <li><strong>外部知识库</strong>：数据库、知识图谱、搜索引擎；</li>
+          <li><strong>离散推理工具</strong>：计算器、符号数学引擎（如 Wolfram Alpha）、代码解释器等。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h2 id="flow">工作流程</h2>
+    <pre><code>用户输入 → 路由器（LLM）分析意图
+              ├── 需要计算   → 调用计算器 / 数学引擎
+              ├── 需要事实   → 查询知识库 / 搜索引擎
+              ├── 需要专长   → 调用专家 LLM
+              └── 通用问题   → 直接由通用 LLM 回答</code></pre>
+    <p>路由决策发生在前端，任务一旦被分配给某个专家模块，模块内部就是一个相对独立的黑盒。这种"先分诊、后执行"的流程让整个系统像一座分工明确的医院。</p>
+
+    <h2 id="vs-react">与 ReAct 的定位差异</h2>
+    <p>MRKL 常被拿来与 ReAct 比较——两者同年提出，但思路完全不同：</p>
+    <table>
+      <tr><th>维度</th><th>MRKL</th><th>ReAct</th></tr>
+      <tr><td>提出方</td><td>AI21 Labs</td><td>Google / 普林斯顿</td></tr>
+      <tr><td>调度方式</td><td>路由器将任务<b>分配</b>给静态专家模块</td><td>模型自己决定"思考-行动-观察"循环</td></tr>
+      <tr><td>模块性质</td><td>模块独立、可替换、可扩展</td><td>主要是工具调用，无独立专家模块</td></tr>
+      <tr><td>侧重点</td><td>模块化、可组合、可审计</td><td>推理轨迹（reasoning trace）的生成</td></tr>
+    </table>
+    <p>更准确地说，MRKL 回答的是"<strong>系统如何组织能力、任务该分给谁</strong>"，ReAct 回答的是"<strong>模型现在该想什么、做什么</strong>"。两者在今天的 Agent 框架中已经走向融合。</p>
+
+    <h2 id="why">为什么要用 MRKL</h2>
+    <ul>
+      <li><strong>准确性</strong>：数学、事实查询交给确定性工具，显著减少 LLM 幻觉；</li>
+      <li><strong>可维护性</strong>：每个专家模块独立更新，不必重训整个模型；</li>
+      <li><strong>可解释 / 可审计</strong>：路由和调用过程透明，便于追踪问题；</li>
+      <li><strong>可扩展</strong>：随时挂接新的知识库或工具，系统能力线性增长。</li>
+    </ul>
+
+    <h2 id="conclusion">总结</h2>
+    <blockquote><p>MRKL 是 LLM 时代"工具调用 / function calling"思想的重要先驱。如今主流 Agent 框架中"LLM 做规划 + 工具做执行"的模式，很大程度上延续了它的架构思路。</p></blockquote>
+    <p>接下来可以阅读：<a href="/articles/react-vs-mrkl.html">ReAct Loop 与 MRKL 的区别比较</a>，或直接看 <a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a>。</p>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/react-vs-mrkl.html">ReAct Loop 与 MRKL 的区别比较</a></li>
+        <li><a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a></li>
+        <li><a href="/articles/loop-vs-react-vs-mrkl.html">Agent Loop vs ReAct vs MRKL：三层概念一次讲清</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+  <link rel="canonical" href="https://mrkl.top/articles/what-is-mrkl.html">
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

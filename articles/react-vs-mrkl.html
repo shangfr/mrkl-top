@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReAct Loop 与 MRKL 的区别比较 | MRKL.top</title>
+  <meta name="description" content="ReAct 与 MRKL 都是 2022 年提出的 Agent 架构，但一个是自适应执行循环，一个是模块化分工架构。六个维度逐项拆解两者的机制、纠错、可扩展性与适用场景。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › ReAct vs MRKL</div>
+    <h1>ReAct Loop 与 MRKL 的区别比较</h1>
+    <p class="lede">两者都是 2022 年提出的 LLM Agent 架构，但设计哲学截然不同。一句话概括：<strong>MRKL 是"分诊台 + 专家门诊"的模块化分工架构，ReAct 是"边想边做、试错迭代"的自适应执行循环</strong>。</p>
+    <p class="meta">2026-11-10 · 约 7 分钟 · 标签：对比 / 热门</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#arch">架构层面对比</a></li>
+        <li><a href="#react-loop">ReAct 的三步循环机制</a></li>
+        <li><a href="#diffs">六个关键差异点</a></li>
+        <li><a href="#fusion">现代视角：走向融合</a></li>
+        <li><a href="#conclusion">结论</a></li>
+      </ul>
+    </div>
+
+    <h2 id="arch">架构层面对比</h2>
+    <table>
+      <tr><th>维度</th><th>MRKL</th><th>ReAct Loop</th></tr>
+      <tr><td>提出者</td><td>AI21 Labs</td><td>Google / 普林斯顿（Shunyu Yao 等）</td></tr>
+      <tr><td>核心结构</td><td>静态两层：路由器 + 专家模块</td><td>单层循环：LLM 在单一上下文中自我驱动</td></tr>
+      <tr><td>任务分配</td><td>路由器把任务<b>分配</b>给不同专家模块</td><td>没有分配，模型自己决定下一步做什么</td></tr>
+      <tr><td>模块性</td><td>模块独立、可替换、可组合、可审计</td><td>无独立模块，全部推理在模型内部完成</td></tr>
+      <tr><td>上下文管理</td><td>各专家模块独立上下文</td><td>单一、共享的推理轨迹（reasoning trace）</td></tr>
+    </table>
+
+    <h2 id="react-loop">ReAct 的三步循环机制</h2>
+    <p>ReAct（<strong>Re</strong>asoning + <strong>Act</strong>ing）的核心是让 LLM 在一个循环里交替输出：</p>
+    <pre><code>Thought（思考）→ Action（行动 / 调用工具）→ Observation（观察结果）→ Thought → ...</code></pre>
+    <p>每一步的"思考"都显式写出来，形成一条可追溯的推理轨迹。模型不是把任务分给别人，而是<strong>自己</strong>判断何时查资料、何时算数、何时给出最终答案，并且可以在中途修正——发现思路错了就换方向。</p>
+    <p>MRKL 则是一次性"分诊"：路由器先分析输入，把整个任务<strong>移交</strong>给最合适的专家模块，专家模块内部是黑盒。</p>
+
+    <h2 id="diffs">六个关键差异点</h2>
+    <h3>1. 规划时机</h3>
+    <ul>
+      <li>MRKL：<strong>先规划、后执行</strong>，路由决策发生在前端；</li>
+      <li>ReAct：<strong>规划与执行交错</strong>（interleaved），走一步看一步，边做边调整。</li>
+    </ul>
+    <h3>2. 错误处理与纠错</h3>
+    <ul>
+      <li>MRKL：路由错了就错了——任务进了错误的模块，缺少回路去纠正（这是 MRKL 的短板）；</li>
+      <li>ReAct：天然具备<strong>纠错能力</strong>——观察结果不对劲，模型可以在下一轮 Thought 里自我修正。</li>
+    </ul>
+    <h3>3. 可解释性</h3>
+    <ul>
+      <li>MRKL：路由过程可审计，但专家模块内部不透明；</li>
+      <li>ReAct：整个思维链（Thought）全程可见，可解释性更强，便于调试和注入约束。</li>
+    </ul>
+    <h3>4. 可扩展性</h3>
+    <ul>
+      <li>MRKL：强。挂一个新的知识库或专家 LLM 不需要动其他部分；</li>
+      <li>ReAct：弱。扩展主要靠往 prompt 里加工具描述，没有模块隔离，工具多了容易让模型混淆。</li>
+    </ul>
+    <h3>5. 性能与成本</h3>
+    <ul>
+      <li>MRKL：通常更快更省——一次路由、一次执行，但路由不准时准确率受限；</li>
+      <li>ReAct：多次工具往返，延迟和 token 成本更高，但复杂任务更灵活、成功率通常更高。</li>
+    </ul>
+    <h3>6. 适用场景</h3>
+    <ul>
+      <li>MRKL：<strong>结构清晰、可分域</strong>的任务（如"先查库、再计算、再生成报告"），适合对可控性和审计有要求的生产系统；</li>
+      <li>ReAct：<strong>开放式、多步推理</strong>任务（谜题、多跳问答、代码调试），适合需要试错和探索的场景。</li>
+    </ul>
+
+    <h2 id="fusion">现代视角：走向融合</h2>
+    <p>如今主流 Agent 框架（LangChain、AutoGPT、OpenAI 的 function calling 等）其实<strong>同时吸收了两种思想</strong>：</p>
+    <ul>
+      <li>用 ReAct 式的循环作为<strong>执行主循环</strong>（思考 → 行动 → 观察）；</li>
+      <li>用 MRKL 式的<strong>工具 / 模块注册表 + 路由</strong>来组织和选择能力。</li>
+    </ul>
+    <p>所以更准确的说法是：MRKL 定义了"<strong>系统如何组织能力</strong>"，ReAct 定义了"<strong>agent 如何推进任务</strong>"——前者回答"我有什么、该用哪个"，后者回答"我现在该想什么、做什么"。两者是互补关系，而非对立方案。</p>
+
+    <h2 id="conclusion">结论</h2>
+    <blockquote><p>MRKL 决定"系统有什么、谁来做"；ReAct 决定"模型每轮怎么想怎么做"。现代 Agent 系统正是二者的合体。</p></blockquote>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/what-is-mrkl.html">什么是 MRKL？模块化推理、知识与语言架构全解</a></li>
+        <li><a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a></li>
+        <li><a href="/articles/loop-vs-react-vs-mrkl.html">Agent Loop vs ReAct vs MRKL：三层概念一次讲清</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+  <link rel="canonical" href="https://mrkl.top/articles/react-vs-mrkl.html">
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

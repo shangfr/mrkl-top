@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LangGraph 实战：用状态图构建你的第一个 Agent | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/articles/langgraph-agent.html">
+  <meta name="description" content="LangGraph 实战教程：用 StateGraph 状态图把标准 Agent Loop 落地——节点、边、条件路由、检查点，附可运行的最小示例与对照表。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › LangGraph 实战</div>
+    <h1>LangGraph 实战：用状态图构建你的第一个 Agent</h1>
+    <p class="lede">前几篇文章讲的是概念，这篇动手。我们用 <strong>LangGraph</strong> 的 <strong>状态图（StateGraph）</strong>搭一个"查数据 → 计算 → 回答"的最小 Agent，并把它和标准 Agent Loop 一一对照，看显式状态图到底比 while 循环强在哪。</p>
+    <p class="meta">2026-11-10 · 约 9 分钟 · 标签：实战 / Python</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#why">为什么用状态图而不是 while 循环</a></li>
+        <li><a href="#concepts">五个核心概念</a></li>
+        <li><a href="#minimal">最小可运行示例</a></li>
+        <li><a href="#mapping">与标准 Agent Loop 的对照</a></li>
+        <li><a href="#tips">三个实战要点</a></li>
+        <li><a href="#conclusion">总结</a></li>
+      </ul>
+    </div>
+
+    <h2 id="why">为什么用状态图而不是 while 循环</h2>
+    <p>我们在 <a href="/articles/agent-loop.html">Agent Loop 原理</a>里讲过：标准循环是一个隐式的 <code>while</code>，模型每轮输出决策，框架执行并回填。它的问题是——<strong>你很难在循环中间插手</strong>：想暂停、想人工审核、想回退一步，都得靠 hack。</p>
+    <p>LangGraph 把循环改成<strong>显式的有向图</strong>：每个节点是一段处理逻辑（思考、执行工具、总结），节点之间是边。于是循环的每一步都变成了图里可观测、可中断、可插入审核的位置。这个思路也正在被 OpenAI Agent SDK 等框架采用。</p>
+
+    <h2 id="concepts">五个核心概念</h2>
+    <table>
+      <tr><th>概念</th><th>作用</th><th>对应标准 Loop 的…</th></tr>
+      <tr><td><strong>State（共享状态）</strong></td><td>所有节点读写的数据对象（问题、观察、答案）</td><td>上下文 + 历史轨迹</td></tr>
+      <tr><td><strong>Node（节点）</strong></td><td>一段处理逻辑，读 State 并返回增量更新</td><td>一轮"思考/行动"</td></tr>
+      <tr><td><strong>Edge（边）</strong></td><td>定义执行顺序</td><td>循环体的顺序执行</td></tr>
+      <tr><td><strong>Conditional Edge（条件边）</strong></td><td>根据 State 分支，决定下一步走哪个节点</td><td>模型判断"继续还是结束"</td></tr>
+      <tr><td><strong>Checkpointer（检查点）</strong></td><td>保存每一步快照，可中断、可续跑</td><td>持久化记忆</td></tr>
+    </table>
+
+    <h2 id="minimal">最小可运行示例</h2>
+    <pre><code>pip install langgraph langchain-openai</code></pre>
+    <pre><code>from typing import TypedDict
+from langgraph.graph import StateGraph, END
+
+class AgentState(TypedDict):
+    question: str          # 用户问题
+    observation: dict | None   # 工具返回的结果
+    answer: str | None     # 最终答案
+
+def decide(state):         # ① 思考节点：LLM 决定调用哪个工具
+    # 真实实现里这里调用 LLM，解析出工具名与参数
+    return {"observation": None}
+
+def execute(state):        # ② 行动节点：执行工具并把结果写回状态
+    return {"observation": {"price": 3310.5}}
+
+def respond(state):        # ③ 终止节点：基于观察生成最终答案
+    return {"answer": "最新收盘价是 3310.5"}
+
+def route(state):          # 条件边：数据没齐就再执行一次，齐了就回答
+    return "respond" if state["observation"] else "execute"
+
+g = StateGraph(AgentState)
+g.add_node("decide", decide)
+g.add_node("execute", execute)
+g.add_node("respond", respond)
+g.add_edge("decide", "execute")
+g.add_conditional_edge("execute", route, {"execute": "execute", "respond": "respond"})
+g.add_edge("respond", END)
+
+app = g.compile()
+result = app.invoke({"question": "上证指数最新收盘价是多少？"})
+print(result["answer"])</code></pre>
+
+    <h2 id="mapping">与标准 Agent Loop 的对照</h2>
+    <table>
+      <tr><th>标准 Agent Loop 环节</th><th>LangGraph 中的落地</th></tr>
+      <tr><td>① 思考：LLM 生成决策</td><td><code>decide</code> 节点（LLM Node）</td></tr>
+      <tr><td>③ 行动：调用工具</td><td><code>execute</code> 节点（Tool Node）</td></tr>
+      <tr><td>④ 观察：结果写回上下文</td><td>节点返回增量更新，合并进 State</td></tr>
+      <tr><td>② 是否结束</td><td>条件边路由到 <code>respond</code> 或 <code>END</code></td></tr>
+      <tr><td>⏱️ 迭代上限防死循环</td><td><code>recursion_limit</code> 参数</td></tr>
+      <tr><td>🧠 记忆 / 断点续跑</td><td>Checkpointer（如 <code>SqliteSaver</code>）</td></tr>
+      <tr><td>👤 人工审核</td><td><code>interrupt()</code> 暂停并等待人类输入</td></tr>
+    </table>
+
+    <h2 id="tips">三个实战要点</h2>
+    <ul>
+      <li><strong>设好 <code>recursion_limit</code></strong>：防止模型钻牛角尖无限循环，等价于标准 Loop 的 <code>max_iterations</code>；</li>
+      <li><strong>用 Checkpointer 做长任务</strong>：耗时任务中途断掉可以从快照恢复，也天然获得对话历史；</li>
+      <li><strong>在敏感节点插 <code>interrupt</code></strong>：比如"发送邮件"节点前暂停，由人来确认——这就是 <a href="/articles/agent-safety.html">Agent 安全护栏</a>的落地姿势。</li>
+    </ul>
+
+    <h2 id="conclusion">总结</h2>
+    <blockquote><p>状态图不是换一种写法，而是把隐式循环升级成<strong>可观测、可中断、可编排</strong>的执行引擎。理解了标准 Agent Loop，再看 LangGraph 就是"把每一步变成图里的节点"这么简单。</p></blockquote>
+    <p>相关阅读：<a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a> · <a href="/articles/tool-calling.html">工具调用完全指南</a> · <a href="/articles/loop-vs-react-vs-mrkl.html">三层概念对比</a></p>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a></li>
+        <li><a href="/articles/tool-calling.html">工具调用（Function Calling）完全指南</a></li>
+        <li><a href="/articles/loop-vs-react-vs-mrkl.html">Agent Loop vs ReAct vs MRKL：三层概念一次讲清</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

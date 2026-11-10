@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MRKL 论文精读：模块化神经符号架构解决了什么问题 | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/articles/mrkl-paper.html">
+  <meta name="description" content="精读 AI21 Labs 的 MRKL 论文（arXiv 2205.00445）：三大动机、路由器与专家模块设计、调用指令格式、实验效果，以及它对 ReAct 与 Function Calling 的深远影响。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › MRKL 论文精读</div>
+    <h1>MRKL 论文精读：模块化神经符号架构解决了什么问题</h1>
+    <p class="lede">站点以 MRKL 命名，值得把这篇奠基论文读透。它篇幅不长，但提出的"路由 + 专家模块"思想深刻影响了后来所有的 Agent 框架。本文带你逐段拆解论文的动机、设计与实验。</p>
+    <p class="meta">2026-11-10 · 约 8 分钟 · 标签：精读 / 论文</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#info">论文信息</a></li>
+        <li><a href="#motivation">三大动机：LLM 的已知短板</a></li>
+        <li><a href="#design">核心设计：路由器与专家模块</a></li>
+        <li><a href="#experiment">实验：把计算交给 Wolfram Alpha</a></li>
+        <li><a href="#legacy">遗产：对后续工作的影响</a></li>
+        <li><a href="#limit">局限与启示</a></li>
+        <li><a href="#conclusion">总结</a></li>
+      </ul>
+    </div>
+
+    <h2 id="info">论文信息</h2>
+    <table>
+      <tr><th>项目</th><th>内容</th></tr>
+      <tr><td>题目</td><td>MRKL Systems: A Modular, Neuro-Symbolic Architecture that Combines Large Language Models, External Knowledge Sources and Discretized Reasoning</td></tr>
+      <tr><td>机构 / 时间</td><td>AI21 Labs，2022 年 5 月（与 ReAct 同期）</td></tr>
+      <tr><td>arXiv 编号</td><td>2205.00445</td></tr>
+      <tr><td>核心主张</td><td>不要把所有能力塞进一个 LLM——让路由器和专家模块分工</td></tr>
+    </table>
+
+    <h2 id="motivation">三大动机：LLM 的已知短板</h2>
+    <ul>
+      <li><strong>计算不可靠</strong>：LLM 是"语言模型"，不是"计算器"。多位数的算术、符号运算经常出错；</li>
+      <li><strong>知识过时</strong>：训练数据有截止日期，无法回答"刚刚发生"的事；</li>
+      <li><strong>难以定制专长</strong>：给通用模型注入特定领域知识，成本高且难以更新。</li>
+    </ul>
+    <p>论文的洞察是：这些问题<strong>不该靠把模型变大来解决</strong>——把任务路由给确定性的外部系统，又快又准又便宜。</p>
+
+    <h2 id="design">核心设计：路由器与专家模块</h2>
+    <p>MRKL 系统由两部分组成：</p>
+    <ol>
+      <li><strong>路由器（Router）</strong>：由 LLM 充当。它接收输入，输出一段"调用指令"，格式类似 <code>call: &lt;module_name&gt;, &lt;arguments&gt;</code>；</li>
+      <li><strong>专家模块（Expert Modules）</strong>：可被路由器调用的任意组件，包括：
+        <ul>
+          <li>外部知识源（数据库、知识图谱、日期/事实查询）；</li>
+          <li>离散推理引擎（Wolfram Alpha、计算器）；</li>
+          <li>专家 LLM（领域微调模型）。</li>
+        </ul>
+      </li>
+    </ol>
+    <p>模块返回结果后，路由器把它放回自己的上下文中继续生成答案——相当于"模块是黑盒，路由是唯一的大脑"。</p>
+
+    <h2 id="experiment">实验：把计算交给 Wolfram Alpha</h2>
+    <p>论文的核心实验是让一个 LLM 路由器学会在数学问题上<strong>调用 Wolfram Alpha</strong> 模块，而不是自己硬算。结果显示：</p>
+    <ul>
+      <li>算术类问题的<strong>准确率显著提升</strong>——计算交给确定性引擎后，错误基本消失；</li>
+      <li>即使某次调用失败，路由器也能把错误当作反馈，尝试其他模块或给出替代答案。</li>
+    </ul>
+    <p>这验证了论文的核心主张：<strong>模块化不仅更准，还让错误变得可定位、可修复</strong>——错误要么出在路由判断，要么出在某个具体模块，而不是模型内部不可见的黑盒。</p>
+
+    <h2 id="legacy">遗产：对后续工作的影响</h2>
+    <table>
+      <tr><th>后续方向</th><th>与 MRKL 的关系</th></tr>
+      <tr><td>ReAct（2022）</td><td>把"路由"变成每步自主决策的循环，强化了纠错能力</td></tr>
+      <tr><td>Toolformer（2023）</td><td>让模型<strong>自己学会</strong>何时调用 API，省去手工路由规则</td></tr>
+      <tr><td>Function Calling</td><td>用结构化 JSON 协议替代自然语言调用指令，路由更可靠</td></tr>
+      <tr><td>现代 Agent 框架</td><td>工具注册表 + 路由 + 循环，几乎就是 MRKL 思想的工程化</td></tr>
+    </table>
+
+    <h2 id="limit">局限与启示</h2>
+    <ul>
+      <li><strong>路由一次定生死</strong>：没有 ReAct 那样的"观察-修正"回路，路由判断错了就难回头；</li>
+      <li><strong>调用格式脆弱</strong>：自然语言的 <code>call:</code> 指令需要模型严格遵循格式，容易解析失败（后来被结构化输出取代）；</li>
+      <li><strong>模块即黑盒</strong>：专家模块内部的推理不可见，可审计性打折扣。</li>
+    </ul>
+    <p>启示：MRKL 的短板恰好解释了为什么后来的 Agent 都采用"<strong>ReAct 循环 + 工具注册表</strong>"的组合——既要模块化，也要纠错回路。</p>
+
+    <h2 id="conclusion">总结</h2>
+    <blockquote><p>MRKL 论文的价值不在某个具体的模型或实验，而在于它确立了 Agent 时代的一条基本设计原则：<strong>让 LLM 做擅长的事（理解与规划），把确定性的活交给确定性的模块</strong>。今天所有 Agent 框架，都在这条原则上生长。</p></blockquote>
+    <p>延伸阅读：<a href="/articles/what-is-mrkl.html">什么是 MRKL</a> · <a href="/articles/react-vs-mrkl.html">ReAct vs MRKL</a> · <a href="/articles/tool-calling.html">工具调用完全指南</a></p>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/what-is-mrkl.html">什么是 MRKL？模块化推理、知识与语言架构全解</a></li>
+        <li><a href="/articles/react-vs-mrkl.html">ReAct Loop 与 MRKL 的区别比较</a></li>
+        <li><a href="/articles/tool-calling.html">工具调用（Function Calling）完全指南</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent 的记忆系统：短期、长期与工作记忆 | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/articles/agent-memory.html">
+  <meta name="description" content="Agent 的记忆系统详解：工作记忆（上下文窗口）、短期记忆（推理轨迹）、长期记忆（向量库/数据库）。讲清三层模型、上下文管理策略与 RAG 实战。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › Agent 记忆系统</div>
+    <h1>Agent 的记忆系统：短期、长期与工作记忆</h1>
+    <p class="lede">Agent Loop 每轮都要把"目标 + 历史 + 观察"塞进上下文——但上下文窗口是有限的。<strong>记忆系统</strong>决定了 Agent 能记住什么、忘掉什么、从哪里找回信息，是 Loop 能否跑深跑远的关键。</p>
+    <p class="meta">2026-11-10 · 约 8 分钟 · 标签：进阶 / 原理</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#why">为什么记忆是 Agent 的核心</a></li>
+        <li><a href="#three">三层记忆模型</a></li>
+        <li><a href="#strategies">上下文管理的四种策略</a></li>
+        <li><a href="#flow">记忆的写入与检索</a></li>
+        <li><a href="#rag">RAG 作为长期记忆</a></li>
+        <li><a href="#challenges">挑战与对策</a></li>
+        <li><a href="#conclusion">总结</a></li>
+      </ul>
+    </div>
+
+    <h2 id="why">为什么记忆是 Agent 的核心</h2>
+    <p>回顾标准 Loop：每一轮，模型都要看到完整的推理轨迹才能做出一致的决策。轨迹越长，上下文越满，最终要么超限崩溃，要么被迫丢掉早期关键信息。<strong>记忆系统就是解决"上下文不够用"的工程层。</strong></p>
+
+    <h2 id="three">三层记忆模型</h2>
+    <table>
+      <tr><th>层级</th><th>载体</th><th>内容</th><th>生命周期</th></tr>
+      <tr><td><strong>工作记忆</strong></td><td>上下文窗口</td><td>当前任务、最近几轮思考与观察</td><td>单次任务内</td></tr>
+      <tr><td><strong>短期记忆</strong></td><td>对话历史 / 推理轨迹</td><td>Thought-Action-Observation 序列</td><td>会话期间</td></tr>
+      <tr><td><strong>长期记忆</strong></td><td>向量库 / 数据库</td><td>跨会话的事实、偏好、知识片段</td><td>持久化</td></tr>
+    </table>
+    <p>可以类比人脑：工作记忆是"手头正在想的事"，短期记忆是"刚才说了什么"，长期记忆是"我知道的世界"。MRKL 里的<strong>知识库模块</strong>，本质上就是显式的长期记忆。</p>
+
+    <h2 id="strategies">上下文管理的四种策略</h2>
+    <table>
+      <tr><th>策略</th><th>做法</th><th>优点</th><th>代价</th></tr>
+      <tr><td>滑动窗口截断</td><td>只保留最近 N 轮</td><td>零成本</td><td>丢失早期信息</td></tr>
+      <tr><td>摘要压缩</td><td>旧轨迹交给 LLM 总结</td><td>保留要点</td><td>每次摘要消耗 token</td></tr>
+      <tr><td>向量检索</td><td>历史存入向量库，按相关性取回</td><td>可按需召回</td><td>需要外部存储与嵌入</td></tr>
+      <tr><td>工具结果截断</td><td>Observation 超长只取前几 KB</td><td>防撑爆</td><td>可能丢关键细节</td></tr>
+    </table>
+
+    <h2 id="flow">记忆的写入与检索</h2>
+    <pre><code>写入：每轮结束后
+  ① 抽取值得记住的信息（实体、结论、关键数据）
+  ② 向量化 → 存入长期记忆库
+
+检索：每轮开始前
+  ① 把当前目标/问题向量化
+  ② 相似度检索 Top-K 相关记忆片段
+  ③ 与工作记忆一起拼进 prompt</code></pre>
+    <p>关键原则：<strong>不是把所有历史都塞回去，而是把"与当前最相关的"找回来</strong>——这既省 token，又避免无关历史干扰推理。</p>
+
+    <h2 id="rag">RAG 作为长期记忆</h2>
+    <p>检索增强生成（RAG）是长期记忆最常见的落地形态：文档/知识库切块 → 向量化入库 → 问答时检索相关片段。它与 Agent 结合时：</p>
+    <ul>
+      <li>把 RAG 当作一个<strong>检索工具</strong>挂进工具注册表（MRKL 视角：一个专家模块）；</li>
+      <li>让 Agent 自行决定"何时需要查资料"，而不是每次都查——省成本、减少幻觉来源。</li>
+    </ul>
+
+    <h2 id="challenges">挑战与对策</h2>
+    <ul>
+      <li><strong>记忆污染</strong>：写入了错误/过时的信息 → 写入前做置信度过滤，长期记忆定期刷新；</li>
+      <li><strong>检索冲突</strong>：召回片段与当前事实矛盾 → 检索结果标注来源，让模型做判断；</li>
+      <li><strong>成本放大</strong>：摘要 + 向量化都要额外 token → 只在阈值触发时启用，日常用滑动窗口。</li>
+    </ul>
+
+    <h2 id="conclusion">总结</h2>
+    <blockquote><p>记忆系统决定了 Agent 的"格局"：没有记忆的 Agent 每轮都失忆，有了分层记忆的 Agent 才能处理跨会话、跨数据源的真实任务。工程上的口诀是——<strong>能塞进去的少塞，该记下来的持久化，需要时按相关性召回</strong>。</p></blockquote>
+    <p>相关阅读：<a href="/articles/agent-loop.html">Agent Loop 原理</a> · <a href="/articles/tool-calling.html">工具调用指南</a> · <a href="/articles/what-is-mrkl.html">什么是 MRKL</a></p>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a></li>
+        <li><a href="/articles/tool-calling.html">工具调用（Function Calling）完全指南</a></li>
+        <li><a href="/articles/what-is-mrkl.html">什么是 MRKL？模块化推理、知识与语言架构全解</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

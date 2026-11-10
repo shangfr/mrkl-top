@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多智能体协作架构：从对话到编排 | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/articles/multi-agent.html">
+  <meta name="description" content="多智能体（Multi-Agent）协作架构详解：Manager-Worker、辩论、编排器、群体四种模式，AutoGen / CrewAI / LangGraph 框架对比，以及成本与收敛性挑战。">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/#articles">文章</a>
+        <a href="/#newsletter">订阅</a>
+        <a href="/articles/react-vs-mrkl.html">对比专题</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="切换明暗主题">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="打开菜单">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/">首页</a> › <a href="/#articles">文章</a> › 多智能体协作</div>
+    <h1>多智能体协作架构：从对话到编排</h1>
+    <p class="lede">单 Agent 的能力再强也有边界：上下文有限、专长单一、容易钻牛角尖。<strong>多智能体（Multi-Agent）</strong>把多个各有专长的 Agent 组织起来分工协作——这是从"单兵作战"到"团队作战"的升级。</p>
+    <p class="meta">2026-11-10 · 约 9 分钟 · 标签：进阶 / 架构</p>
+
+    <div class="toc">
+      <b>目录</b>
+      <ul>
+        <li><a href="#why">为什么需要多个 Agent</a></li>
+        <li><a href="#patterns">四种主流协作模式</a></li>
+        <li><a href="#comms">通信机制</a></li>
+        <li><a href="#frameworks">框架对比</a></li>
+        <li><a href="#mrkl">与 MRKL 的关系</a></li>
+        <li><a href="#challenges">挑战：成本、收敛与死循环</a></li>
+        <li><a href="#conclusion">总结</a></li>
+      </ul>
+    </div>
+
+    <h2 id="why">为什么需要多个 Agent</h2>
+    <ul>
+      <li><strong>分工与专业化</strong>：研究员 Agent、代码 Agent、审阅 Agent 各有专长，比一个万能 Agent 更可靠；</li>
+      <li><strong>对抗与审查</strong>：让一个 Agent 生成、另一个 Agent 挑错，能显著提升质量（如代码互审）；</li>
+      <li><strong>并行提速</strong>：独立的子任务可以并行执行，缩短端到端延迟；</li>
+      <li><strong>上下文隔离</strong>：每个 Agent 只看自己负责的部分，避免单一上下文被撑爆。</li>
+    </ul>
+
+    <h2 id="patterns">四种主流协作模式</h2>
+    <table>
+      <tr><th>模式</th><th>结构</th><th>典型场景</th></tr>
+      <tr><td><strong>Manager-Worker（层级）</strong></td><td>Manager 规划并分发子任务，Worker 执行并回报</td><td>复杂项目拆解执行</td></tr>
+      <tr><td><strong>Debate（辩论）</strong></td><td>多个 Agent 各自作答并互相反驳，最终裁决</td><td>事实核查、方案评审</td></tr>
+      <tr><td><strong>Orchestrator-Plugins（编排器）</strong></td><td>一个编排器调用一组工具化 Agent</td><td>客服、RAG 问答流水线</td></tr>
+      <tr><td><strong>Swarm（群体）</strong></td><td>Agent 之间直接传递消息，无中心调度</td><td>松耦合协作任务</td></tr>
+    </table>
+
+    <h2 id="comms">通信机制</h2>
+    <ul>
+      <li><strong>消息传递</strong>：Agent 之间直接发消息（AutoGen 的对话式）；</li>
+      <li><strong>共享黑板</strong>：所有 Agent 读写同一个状态对象（LangGraph 的 State）；</li>
+      <li><strong>结构化调用</strong>：像 Function Calling 一样，把"调用另一个 Agent"也注册成一个工具——Agent 互相"当工具用"。</li>
+    </ul>
+
+    <h2 id="frameworks">框架对比</h2>
+    <table>
+      <tr><th>框架</th><th>协作形态</th><th>特点</th></tr>
+      <tr><td>AutoGen</td><td>对话式多 Agent</td><td>Agent 之间自由对话、可切换发言者</td></tr>
+      <tr><td>CrewAI</td><td>角色分工（Role/Goal/Backstory）</td><td>贴近业务团队建模，上手快</td></tr>
+      <tr><td>LangGraph</td><td>状态图编排</td><td>显式控制流，可观测可审核，适合生产</td></tr>
+      <tr><td>OpenAI Swarm</td><td>轻量群体协作</td><td>Agent 可交接（handoff），实现简单</td></tr>
+    </table>
+
+    <h2 id="mrkl">与 MRKL 的关系</h2>
+    <p>MRKL 的"专家模块"是<strong>静态</strong>的（知识库、计算器）；多智能体系统把专家模块<strong>动态化</strong>——每个 Agent 就是一个带推理能力的专家。Router 的角色升级为 Manager/Orchestrator，循环的每个节点都可能是一个完整的小 Agent Loop。<strong>可以说：多智能体 = MRKL 的组织思想 + ReAct 的执行协议 + 多个 Loop 的组合。</strong></p>
+
+    <h2 id="challenges">挑战：成本、收敛与死循环</h2>
+    <ul>
+      <li><strong>token 成本放大</strong>：N 个 Agent 互相传话，成本近似乘 N → 控制轮次上限、避免无意义寒暄；</li>
+      <li><strong>收敛性</strong>：辩论模式可能永远达不成一致 → 设置最大轮数 + 明确的终止条件（投票、时间、目标达成）；</li>
+      <li><strong>死循环 / 循环引用</strong>：Agent A 调用 B、B 又调回 A → 像单 Agent 一样需要迭代上限，最好再加循环检测；</li>
+      <li><strong>上下文放大</strong>：共享黑板如果全部可见，等于又造了一个大上下文 → 按需读写、隔离视图。</li>
+    </ul>
+
+    <h2 id="conclusion">总结</h2>
+    <blockquote><p>多智能体不是"越多越好"，而是"合适的分工 + 明确的控制流 + 强硬的终止条件"。先想清楚谁负责什么、怎么交接、如何停止，再选框架——否则团队越大，失控越快。</p></blockquote>
+    <p>相关阅读：<a href="/articles/agent-loop.html">Agent Loop 原理</a> · <a href="/articles/langgraph-agent.html">LangGraph 实战</a> · <a href="/articles/agent-safety.html">安全与护栏</a></p>
+
+    <div class="related">
+      <h2>相关阅读</h2>
+      <ul>
+        <li><a href="/articles/agent-loop.html">Agent 框架的 Loop 原理详解</a></li>
+        <li><a href="/articles/langgraph-agent.html">LangGraph 实战：用状态图构建你的第一个 Agent</a></li>
+        <li><a href="/articles/agent-safety.html">Agent 的安全与护栏：防止失控的工程实践</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="点赞本文">👍 点赞 <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>分享：</span>
+    <button data-share="x" aria-label="分享到 X">𝕏</button>
+    <button data-share="linkedin" aria-label="分享到 LinkedIn">in</button>
+    <button data-share="weibo" aria-label="分享到微博">微博</button>
+    <button data-share="copy" aria-label="复制链接">🔗 链接</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← 上一篇</a>
+  <a id="nextLink" class="pn-link hidden" href="#">下一篇 →</a>
+</div>
+
+<section class="newsletter">
+      <h2>订阅「Agent 架构周报」</h2>
+      <p>每周一封精讲 + 新论文解读，无广告，随时退订。</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">订阅</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/">AI Agent 架构学习站</a> · <a href="/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="回到顶部">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
