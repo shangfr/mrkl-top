@@ -147,6 +147,7 @@
     "articles/agent-memory.html",
     "articles/tool-calling.html",
     "articles/langgraph-agent.html",
+    "articles/agent-frameworks-compare.html",
     "articles/multi-agent.html",
     "articles/agent-safety.html"
   ];

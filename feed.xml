@@ -76,5 +76,12 @@
       <description>提示注入、工具滥用、循环失控——六层防护体系+上生产前的检查清单。</description>
       <pubDate>Tue, 10 Nov 2026 00:00:00 +0000</pubDate>
     </item>
+    <item>
+      <title>Agent 框架横向对比：LangGraph、AutoGen 与 CrewAI 怎么选</title>
+      <link>https://mrkl.top/articles/agent-frameworks-compare.html</link>
+      <guid isPermaLink="true">https://mrkl.top/articles/agent-frameworks-compare.html</guid>
+      <description>三个框架的核心抽象、逐维度对比表、最小示例与一份可直接照抄的选型决策清单。</description>
+      <pubDate>Tue, 10 Nov 2026 00:00:00 +0000</pubDate>
+    </item>
   </channel>
 </rss>
