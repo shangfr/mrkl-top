@@ -55,19 +55,19 @@
 
     <h2 id="layers">Layered Relationship Diagram</h2>
     <pre><code>┌───────────────────────────────────────────────┐
-│  Agent Loop (execution engine)                 │
-│    while not terminated:                       │
-│        ┌─────────────────────────────────┐     │
-│        │  ReAct decision protocol        │     │
-│        │  (inside each round)            │     │
-│        │  Thought → Action → Obs         │     │
-│        └────────────────┬────────────────┘     │
-│                         │ call                  │
-│        ┌────────────────▼────────────────┐     │
-│        │  MRKL organizational             │     │
-│        │  architecture (tools/modules)    │     │
-│        │  Router + expert module registry │     │
-│        └─────────────────────────────────┘     │
+│  Agent Loop (execution engine)                │
+│    while not terminated:                      │
+│        ┌─────────────────────────────────┐    │
+│        │  ReAct decision protocol        │    │
+│        │  (inside each round)            │    │
+│        │  Thought → Action → Obs         │    │
+│        └────────────────┬────────────────┘    │
+│                         │  call               │
+│        ┌────────────────▼────────────────┐    │
+│        │  MRKL organizational            │    │
+│        │  architecture (tools/modules)   │    │
+│        │  Router + expert module registry│    │
+│        └─────────────────────────────────┘    │
 └───────────────────────────────────────────────┘</code></pre>
     <p><strong>Loop is the "skeleton," ReAct is "how the brain works each round," and MRKL is "how the hands and resources are arranged."</strong></p>
 
@@ -100,7 +100,7 @@ Action: calculator["return_rate", 3310.5, 3245.2]
 Observation: 0.0201
 
 Thought: Data is ready, generate the report
-Final Answer: 近30日收益率为 2.01%，...</code></pre>
+Final Answer: The return rate over the last 30 days is 2.01%, ...</code></pre>
       </li>
       <li><strong>Loop layer (wrap-up)</strong>: it detects <code>Final Answer</code> → break and returns the answer; if max_iterations is exceeded (e.g., still going in circles by round 4) → force termination to prevent an infinite loop.</li>
     </ol>
@@ -150,4 +150,10 @@ Final Answer: 近30日收益率为 2.01%，...</code></pre>
     </section>
   </main>
   <footer class="site-footer">
-    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architectur
+    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architecture Learning Site</a> · <a href="/en/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="Back to top">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>
