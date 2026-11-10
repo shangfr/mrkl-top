@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MRKL Tutorial: Modular Reasoning, Knowledge, and Language for AI Agents | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/en/articles/mrkl-tutorial.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://mrkl.top/articles/what-is-mrkl.html">
+  <meta name="description" content="A hands-on MRKL tutorial: what the modular reasoning, knowledge, and language architecture is, how its router and expert modules work, a minimal Python example, and when to use it.">
+  <meta name="keywords" content="MRKL tutorial, MRKL architecture, modular reasoning knowledge and language, MRKL paper, ReAct, AI agent, LLM router, expert modules">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/en/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/en/#articles">Articles</a>
+        <a href="/en/#newsletter">Subscribe</a>
+        <a href="/en/articles/react-vs-mrkl.html">Comparisons</a>
+        <a href="/" lang="zh-CN">中文</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="Open menu">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/en/">Home</a> › <a href="/en/#articles">Articles</a> › MRKL Tutorial</div>
+    <h1>MRKL Tutorial: Modular Reasoning, Knowledge, and Language for AI Agents</h1>
+    <p class="lede">You've heard "MRKL" tossed around, but what does it actually do? This tutorial walks through the architecture from AI21 Labs' 2022 paper: the <strong>router</strong>, the <strong>expert modules</strong>, and the loop that ties them together. By the end, you'll have a minimal working Python example and a clear sense of <em>when</em> MRKL-style design pays off.</p>
+    <p class="meta">2026-11-10 · about 9 min · Tags: Tutorial / Architecture / Router / Python</p>
+
+    <div class="toc">
+      <b>Contents</b>
+      <ul>
+        <li><a href="#what">What is MRKL?</a></li>
+        <li><a href="#router">The Router: turning a question into a dispatch</a></li>
+        <li><a href="#experts">Expert Modules: knowledge, computation, and specialists</a></li>
+        <li><a href="#loop">Where MRKL meets the Agent Loop</a></li>
+        <li><a href="#example">A minimal Python example</a></li>
+        <li><a href="#when">When to use MRKL-style design</a></li>
+        <li><a href="#compare">MRKL vs ReAct vs a single LLM</a></li>
+        <li><a href="#conclusion">Summary</a></li>
+      </ul>
+    </div>
+
+    <h2 id="what">What is MRKL?</h2>
+    <p><strong>MRKL</strong> stands for <strong>M</strong>odular <strong>R</strong>easoning, <strong>K</strong>nowledge, and <strong>L</strong>anguage. It's a neuro-symbolic architecture proposed by AI21 Labs in 2022 (arXiv 2205.00445) that splits an AI system into two kinds of parts:</p>
+    <ul>
+      <li><strong>A router</strong> — an LLM that understands the query and decides which expert to call;</li>
+      <li><strong>Expert modules</strong> — specialized components such as a knowledge base, a calculator or symbolic solver, a code interpreter, or a domain-specific LLM.</li>
+    </ul>
+    <p>The core idea is simple: <strong>no single model should do everything</strong>. Delegate the query to the component that is actually good at it, then merge the result back. It's the same division of labor you'd use to build a company, which is why MRKL-style thinking keeps reappearing in modern agent frameworks.</p>
+
+    <h2 id="router">The Router: turning a question into a dispatch</h2>
+    <p>The router is typically an LLM prompted to output a decision: which expert should handle this query, and with what arguments. A minimal router prompt looks like:</p>
+    <pre><code>You are a router. Classify the query into one of:
+1. "calc"  — arithmetic or math questions
+2. "kb"    — factual questions about stored knowledge
+3. "code"  — questions that need executing code
+4. "llm"   — anything else, answer directly
+Output only the category.</code></pre>
+    <p>In practice, you can implement routing with structured output (JSON mode), function calling, or even a small classification model. The important property: <strong>routing is cheap, and getting it wrong only costs one retry</strong> — so don't over-engineer the router.</p>
+
+    <h2 id="experts">Expert Modules: knowledge, computation, and specialists</h2>
+    <table>
+      <tr><th>Expert type</th><th>What it handles</th><th>Examples</th></tr>
+      <tr><td><strong>Knowledge base</strong></td><td>Stable, queryable facts</td><td>Vector DB with retrieval, structured DB, docs</td></tr>
+      <tr><td><strong>Symbolic / computational</strong></td><td>Exact math, logic, lookups</td><td>Calculator, Wolfram Alpha, SQL engine</td></tr>
+      <tr><td><strong>Code interpreter</strong></td><td>Run code to verify answers</td><td>Python sandbox, notebook runtime</td></tr>
+      <tr><td><strong>Specialized LLM</strong></td><td>Domain reasoning</td><td>Legal / medical / code-specialized models</td></tr>
+    </table>
+    <p>Each expert can be a black box as far as the router is concerned — it takes arguments, returns a result. This is exactly the <a href="/en/articles/tool-calling.html">tool-calling interface</a> modern agents use, which is why MRKL feels so familiar today.</p>
+
+    <h2 id="loop">Where MRKL meets the Agent Loop</h2>
+    <p>MRKL describes the <strong>organization</strong> (who does the work). It doesn't prescribe how the system decides to keep going — that's the <a href="/en/articles/agent-loop.html">Agent Loop</a> (the execution engine) and <a href="/en/articles/react-vs-mrkl.html">ReAct</a> (the think-then-act protocol). In practice, the three compose:</p>
+    <ol>
+      <li>The loop asks the router what to do next;</li>
+      <li>The router dispatches to an expert module;</li>
+      <li>The expert's output is written back to context;</li>
+      <li>Repeat until the loop decides to answer.</li>
+    </ol>
+    <p>If you already understand our <a href="/en/articles/loop-vs-react-vs-mrkl.html">three-layer picture</a>, MRKL is the "organizational architecture" layer, and any agent framework can be used to run it.</p>
+
+    <h2 id="example">A minimal Python example</h2>
+    <pre><code>import json
+
+def calc(query: str) -> str:
+    # A tiny safe evaluator for arithmetic only
+    allowed = set("0123456789+-*/ .")
+    if not set(query).issubset(allowed):
+        return "cannot evaluate"
+    return str(eval(query))  # demo only — use a real sandbox in prod
+
+def kb(query: str) -> str:
+    facts = {"mrkl_author": "AI21 Labs", "mrkl_year": 2022}
+    return facts.get(query, "not found")
+
+def router_llm(query: str) -> str:
+    # In production this is an LLM call; here we stub a rule:
+    if any(c.isdigit() for c in query):
+        return "calc"
+    if "who" in query or "when" in query:
+        return "kb"
+    return "llm"
+
+def mrkl_agent(query: str) -> str:
+    expert = router_llm(query)
+    if expert == "calc":
+        return calc(query)
+    if expert == "kb":
+        return kb(query)
+    return f"llm answer for: {query}"  # your main LLM goes here
+
+print(mrkl_agent("What is 12 * 8?"))   # -> 96
+print(mrkl_agent("who is mrkl_author?"))  # -> AI21 Labs</code></pre>
+    <p>The pattern to copy is the <strong>dispatch table</strong>: the router returns a key, the agent looks up a handler. Production versions add validation, retries, and observability — but the skeleton is exactly what LangGraph, AutoGen, and CrewAI wrap for you (see our <a href="/en/articles/langgraph-agent.html">LangGraph tutorial</a>).</p>
+
+    <h2 id="when">When to use MRKL-style design</h2>
+    <ul>
+      <li>You have <strong>reliable, expensive, or specialized components</strong> (a solver, a DB, a domain expert) that a general LLM shouldn't reinvent;</li>
+      <li>Your queries are <strong>highly heterogeneous</strong> — math, facts, code, prose — with no single best model;</li>
+      <li>You need <strong>auditability</strong>: knowing which expert answered, so you can test each module separately;</li>
+      <li>Your bottleneck is <strong>cost or latency</strong>: route easy queries to small models and hard ones to big ones.</li>
+    </ul>
+    <p>If instead your workload is homogeneous prose generation, a single well-prompted LLM is simpler and often better. Modularity has a real cost: more moving parts, more failure modes, more plumbing.</p>
+
+    <h2 id="compare">MRKL vs ReAct vs a single LLM</h2>
+    <table>
+      <tr><th>Approach</th><th>Structure</th><th>Best for</th><th>Weakness</th></tr>
+      <tr><td><strong>Single LLM</strong></td><td>One model, everything in-context</td><td>Simple, homogeneous tasks</td><td>Hallucinated facts, weak arithmetic</td></tr>
+      <tr><td><strong>ReAct</strong></td><td>Model chooses actions, acts, observes</td><td>Interactive, exploratory tasks</td><td>Needs good tooling and grounding</td></tr>
+      <tr><td><strong>MRKL</strong></td><td>Router + expert modules</td><td>Heterogeneous queries, known experts</td><td>Routing overhead, integration work</td></tr>
+    </table>
+    <p>They're not rivals: ReAct can be the decision protocol <em>inside</em> an MRKL-organized system, and the Agent Loop is the engine running both. For the full picture, see <a href="/en/articles/mrkl-paper.html">the paper deep dive</a> and <a href="/en/articles/react-vs-mrkl.html">ReAct vs MRKL</a>.</p>
+
+    <h2 id="conclusion">Summary</h2>
+    <blockquote><p>MRKL is the original blueprint for "don't make one model do everything": a router that dispatches, and experts that specialize. Thirty lines of Python capture the essence, and every modern agent framework is, at heart, an opinionated MRKL+loop implementation.</p></blockquote>
+    <p>Next: <a href="/en/articles/react-vs-mrkl.html">ReAct Loop vs MRKL</a> · <a href="/en/articles/agent-loop.html">The Agent Loop, explained</a> · <a href="/en/articles/langgraph-agent.html">LangGraph tutorial</a></p>
+
+    <div class="related">
+      <h2>Related reading</h2>
+      <ul>
+        <li><a href="/en/articles/react-vs-mrkl.html">ReAct Loop vs MRKL: The Difference Explained</a></li>
+        <li><a href="/en/articles/agent-loop.html">The Agent Loop, Explained</a></li>
+        <li><a href="/en/articles/mrkl-paper.html">MRKL Paper Deep Dive</a></li>
+        <li><a href="/en/articles/tool-calling.html">Tool Calling: The Complete Guide</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="Like this article">👍 Like <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>Share:</span>
+    <button data-share="x" aria-label="Share on X">𝕏</button>
+    <button data-share="linkedin" aria-label="Share on LinkedIn">in</button>
+    <button data-share="weibo" aria-label="Share on Weibo">微博</button>
+    <button data-share="copy" aria-label="Copy link">🔗 Link</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← Previous</a>
+  <a id="nextLink" class="pn-link hidden" href="#">Next →</a>
+</div>
+
+<section class="newsletter">
+      <h2>Subscribe to the Agent Architecture Weekly</h2>
+      <p>One focused email per week: MRKL / ReAct / Agent Loop deep dives, framework tutorials, and paper notes. No ads, unsubscribe anytime.</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">Subscribe</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architecture Learning Site</a> · <a href="/en/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="Back to top">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

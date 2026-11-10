@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Framework Showdown: LangGraph vs AutoGen vs CrewAI | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/en/articles/agent-frameworks-compare.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://mrkl.top/articles/agent-frameworks-compare.html">
+  <meta name="description" content="Core abstractions, a dimension-by-dimension comparison table, minimal examples, and a copy-paste decision checklist so you never get framework-locked.">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/en/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/en/#articles">Articles</a>
+        <a href="/en/#newsletter">Subscribe</a>
+        <a href="/en/articles/react-vs-mrkl.html">Comparisons</a>
+        <a href="/" lang="zh-CN">中文</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="Open menu">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/en/">Home</a> › <a href="/en/#articles">Articles</a> › Framework Showdown</div>
+        <h1>Agent Framework Showdown: LangGraph vs AutoGen vs CrewAI</h1>
+    <p class="lede">Last time we hand-rolled an agent with <strong>LangGraph</strong>. But the market also has AutoGen, CrewAI, OpenAI Agent SDK… which one should you pick? This article doesn't list features; it starts from each framework's <strong>core abstraction</strong>: who turns the loop into a graph, who turns collaboration into conversation, who turns teams into role tables. At the end you get a decision checklist you can copy straight into your project.</p>
+    <p class="meta">2026-11-10 · about 9 min · Tags: Comparison / Hands-on / Selection</p>
+
+    <div class="toc">
+      <b>Contents</b>
+      <ul>
+        <li><a href="#why">Why are there so many frameworks?</a></li>
+        <li><a href="#abstractions">The core abstractions</a></li>
+        <li><a href="#compare">Dimension-by-dimension comparison</a></li>
+        <li><a href="#minimal">Minimal examples compared</a></li>
+        <li><a href="#choose">How to choose: a decision checklist</a></li>
+        <li><a href="#myths">Three common misconceptions</a></li>
+        <li><a href="#conclusion">Summary</a></li>
+      </ul>
+    </div>
+
+    <h2 id="why">Why are there so many frameworks?</h2>
+    <p>If you've read <a href="/en/articles/agent-loop.html">how the Agent Loop works</a>, you know that every "agent framework" essentially implements the same thing — <strong>the standard loop of "think → decide → call tools → observe → think again"</strong>. The frameworks differ only in what sits around the loop: who offers better <strong>control points, collaboration patterns, and engineering tooling</strong>.</p>
+    <p>So picking a framework isn't about "which is stronger" but <strong>which mental model you prefer for managing the loop</strong>: drawing a graph, starting a conversation, or directing a role-playing cast.</p>
+
+    <h2 id="abstractions">The core abstractions</h2>
+    <table>
+      <tr><th>Framework</th><th>Core abstraction</th><th>One-line summary</th></tr>
+      <tr><td><strong>LangGraph</strong></td><td>Directed state graph (nodes + edges + conditional routing)</td><td>Draw the loop as a graph; every step observable, interruptible, rollback-able</td></tr>
+      <tr><td><strong>AutoGen</strong></td><td>Conversational message flow (multi-agent chat)</td><td>Model collaboration as agents chatting in a group; messages are state</td></tr>
+      <tr><td><strong>CrewAI</strong></td><td>Roles + tasks + process (a team script)</td><td>Assign roles like building a team; execute in scripted order</td></tr>
+    </table>
+    <p>These three abstractions map onto three collaboration patterns — orchestrator, debate, and Manager-Worker — covered in <a href="/en/articles/multi-agent.html">multi-agent architectures</a>. Frameworks just bake the pattern into an API.</p>
+
+    <h2 id="compare">Dimension-by-dimension comparison</h2>
+    <table>
+      <tr><th>Dimension</th><th>LangGraph</th><th>AutoGen</th><th>CrewAI</th></tr>
+      <tr><td><strong>Learning curve</strong></td><td>Medium: you must understand graphs first</td><td>Low: like writing a chatbot</td><td>Lowest: like writing config + business functions</td></tr>
+      <tr><td><strong>Single-agent control</strong></td><td>Strongest: node-level intervention</td><td>Medium: controlled via conversation turns</td><td>Medium: controlled via task definitions</td></tr>
+      <tr><td><strong>Multi-agent patterns</strong></td><td>Arbitrary topology (the graph decides)</td><td>Conversational (naturally supports debate)</td><td>Sequential / hierarchical flows</td></tr>
+      <tr><td><strong>Debugging & visualization</strong></td><td>Strong: official visualization + checkpoint replay</td><td>Medium: log-driven</td><td>Medium: process logs</td></tr>
+      <tr><td><strong>Persistence / memory</strong></td><td>Built-in Checkpointer</td><td>Conversation history management</td><td>Memory classes (short/long/entity)</td></tr>
+      <tr><td><strong>Deployment shape</strong></td><td>Pure Python library, embeddable anywhere</td><td>Python library, research-prototype oriented</td><td>Python library, business-pipeline oriented</td></tr>
+      <tr><td><strong>Ecosystem & community</strong></td><td>LangChain ecosystem + official SaaS</td><td>Microsoft-maintained, academically active</td><td>Fast-growing community, many templates</td></tr>
+      <tr><td><strong>Best fit</strong></td><td>Production-grade, tightly controlled complex agents</td><td>Research exploration, multi-role debate</td><td>Business process automation, fast delivery</td></tr>
+    </table>
+
+    <h2 id="minimal">Minimal examples compared</h2>
+    <p>The same requirement — "let the model decide whether to call a tool" — written in each framework:</p>
+    <pre><code># LangGraph: define a node; conditional edges pick the path
+from langgraph.graph import StateGraph, END
+
+def decide(state):
+    if state.get("need_tool"):
+        return {"next": "tool"}
+    return {"next": "end"}
+
+graph.add_conditional_edges("decide", lambda s: s["next"])</code></pre>
+    <pre><code># AutoGen: two roles converse; tool calls are part of the message flow
+from autogen import ConversableAgent
+
+assistant = ConversableAgent(name="assistant", llm_config=llm_config)
+assistant.register_for_llm(name="search", description="search", function=search_fn)
+user = ConversableAgent(name="user", llm_config=False)
+user.initiate_chat(assistant, message="Check the latest news")</code></pre>
+    <pre><code># CrewAI: roles + tasks + process; the framework does the orchestration
+from crewai import Agent, Task, Crew
+
+researcher = Agent(role="researcher", tools=[search_tool], goal="find the answer")
+task = Task(description="answer the user's question", agent=researcher)
+Crew(agents=[researcher], tasks=[task], process="sequential").kickoff()</code></pre>
+    <p>All three express the same Agent Loop; the <strong>control point</strong> just moves — LangGraph puts it in <strong>nodes and edges</strong>, AutoGen in <strong>messages</strong>, CrewAI in <strong>tasks and roles</strong>.</p>
+
+    <h2 id="choose">How to choose: a decision checklist</h2>
+    <ul>
+      <li>Need <strong>production readiness and fine control</strong> (human review, checkpoint resume, canary deploys) → choose <strong>LangGraph</strong>, paired with <a href="/en/articles/agent-safety.html">guardrail</a> practices;</li>
+      <li>Need to quickly validate <strong>research ideas with multiple agents debating/cooperating</strong> → choose <strong>AutoGen</strong>;</li>
+      <li>Need <strong>business process automation</strong> (support, content pipelines) that non-engineers can also read → choose <strong>CrewAI</strong>;</li>
+      <li>Team already uses <strong>LangChain</strong> → LangGraph first, lowest learning cost;</li>
+      <li>Unsure → get <a href="/en/articles/langgraph-agent.html">the minimal LangGraph example</a> running, then switch as needed.</li>
+    </ul>
+    <p>One reminder: the framework is just scaffolding. <strong>The real gap is tool design, context management, and guardrails</strong> — see <a href="/en/articles/tool-calling.html">the tool-calling guide</a> and <a href="/en/articles/agent-memory.html">memory systems</a>.</p>
+
+    <h2 id="myths">Three common misconceptions</h2>
+    <ul>
+      <li><strong>"A hotter framework is a safer one"</strong> — frameworks don't solve prompt injection or tool abuse; that's your guardrail responsibility;</li>
+      <li><strong>"Multi-agent always beats single-agent"</strong> — for most tasks, one agent plus good tools is enough; multi-agent adds communication overhead and a larger failure surface;</li>
+      <li><strong>"Switching frameworks means rewriting the business"</strong> — decouple tools, state, and memory from business code, and switching frameworks is just swapping the orchestration shell.</li>
+    </ul>
+
+    <h2 id="conclusion">Summary</h2>
+    <blockquote><p>LangGraph, AutoGen, and CrewAI don't differ in "whether they can build agents" — they differ in <strong>which mental model you use to manage the standard Loop: graph, conversation, or script</strong>. Decide what control point your scenario needs first, then pick the framework — don't let the framework pick for you.</p></blockquote>
+    <p>Related: <a href="/en/articles/langgraph-agent.html">LangGraph tutorial</a> · <a href="/en/articles/multi-agent.html">Multi-agent architectures</a> · <a href="/en/articles/loop-vs-react-vs-mrkl.html">Agent Loop vs ReAct vs MRKL</a></p>
+
+    <div class="related">
+      <h2>Related reading</h2>
+      <ul>
+        <li><a href="/en/articles/langgraph-agent.html">LangGraph in Practice: Build Your First Agent with StateGraph</a></li>
+        <li><a href="/en/articles/multi-agent.html">Multi-Agent Architectures: From Conversation to Orchestration</a></li>
+        <li><a href="/en/articles/tool-calling.html">Tool Calling (Function Calling): The Complete Guide</a></li>
+        <li><a href="/en/articles/loop-vs-react-vs-mrkl.html">Agent Loop vs ReAct vs MRKL: Three Layers, One Clear Picture</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="Like this article">👍 Like <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>Share:</span>
+    <button data-share="x" aria-label="Share on X">𝕏</button>
+    <button data-share="linkedin" aria-label="Share on LinkedIn">in</button>
+    <button data-share="weibo" aria-label="Share on Weibo">微博</button>
+    <button data-share="copy" aria-label="Copy link">🔗 Link</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← Previous</a>
+  <a id="nextLink" class="pn-link hidden" href="#">Next →</a>
+</div>
+
+<section class="newsletter">
+      <h2>Subscribe to the Agent Architecture Weekly</h2>
+      <p>One focused email per week: MRKL / ReAct / Agent Loop deep dives, framework tutorials, and paper notes. No ads, unsubscribe anytime.</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">Subscribe</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architecture Learning Site</a> · <a href="/en/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="Back to top">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Agent Architectures: From Conversation to Orchestration | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/en/articles/multi-agent.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://mrkl.top/articles/multi-agent.html">
+  <meta name="description" content="Manager-worker, debate, orchestrator, and swarm — four collaboration patterns, a framework comparison, and the convergence challenges.">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/en/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/en/#articles">Articles</a>
+        <a href="/en/#newsletter">Subscribe</a>
+        <a href="/en/articles/react-vs-mrkl.html">Comparisons</a>
+        <a href="/" lang="zh-CN">中文</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="Open menu">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/en/">Home</a> › <a href="/en/#articles">Articles</a> › Multi-Agent Architectures</div>
+        <h1>Multi-Agent Architectures: From Conversation to Orchestration</h1>
+    <p class="lede">However capable a single agent is, it has hard limits: a finite context, a single specialty, and a tendency to go down rabbit holes. <strong>Multi-agent systems</strong> organize several specialized agents to collaborate — an upgrade from "solo fighter" to "team play".</p>
+    <p class="meta">2026-11-10 · about 9 min · Tags: Advanced / Architecture</p>
+
+    <div class="toc">
+      <b>Contents</b>
+      <ul>
+        <li><a href="#why">Why multiple agents?</a></li>
+        <li><a href="#patterns">Four mainstream collaboration patterns</a></li>
+        <li><a href="#comms">Communication mechanisms</a></li>
+        <li><a href="#frameworks">Framework comparison</a></li>
+        <li><a href="#mrkl">The relationship to MRKL</a></li>
+        <li><a href="#challenges">Challenges: cost, convergence, and dead loops</a></li>
+        <li><a href="#conclusion">Summary</a></li>
+      </ul>
+    </div>
+
+    <h2 id="why">Why multiple agents?</h2>
+    <ul>
+      <li><strong>Division of labor and specialization</strong>: a researcher agent, a code agent, and a reviewer agent each bring a specialty that a single generalist can't match reliably;</li>
+      <li><strong>Adversarial review</strong>: have one agent generate and another critique, which measurably improves quality (e.g., cross-reviewing code);</li>
+      <li><strong>Parallel speed-up</strong>: independent subtasks run concurrently, cutting end-to-end latency;</li>
+      <li><strong>Context isolation</strong>: each agent only sees its own slice, keeping a single context from blowing up.</li>
+    </ul>
+
+    <h2 id="patterns">Four mainstream collaboration patterns</h2>
+    <table>
+      <tr><th>Pattern</th><th>Structure</th><th>Typical scenario</th></tr>
+      <tr><td><strong>Manager-Worker (hierarchical)</strong></td><td>A manager plans and distributes subtasks; workers execute and report back</td><td>Breaking down and executing a complex project</td></tr>
+      <tr><td><strong>Debate</strong></td><td>Several agents answer and rebut each other, then a final verdict</td><td>Fact-checking, proposal review</td></tr>
+      <tr><td><strong>Orchestrator-Plugins</strong></td><td>One orchestrator calls a set of tool-ified agents</td><td>Customer support, RAG Q&A pipelines</td></tr>
+      <tr><td><strong>Swarm</strong></td><td>Agents pass messages directly, no central scheduler</td><td>Loosely coupled collaboration tasks</td></tr>
+    </table>
+
+    <h2 id="comms">Communication mechanisms</h2>
+    <ul>
+      <li><strong>Message passing</strong>: agents message each other directly (AutoGen's conversational style);</li>
+      <li><strong>Shared blackboard</strong>: all agents read and write one shared state object (LangGraph's State);</li>
+      <li><strong>Structured calls</strong>: like function calling, registering "call another agent" as a tool — agents literally "use each other as tools".</li>
+    </ul>
+
+    <h2 id="frameworks">Framework comparison</h2>
+    <table>
+      <tr><th>Framework</th><th>Collaboration style</th><th>Characteristics</th></tr>
+      <tr><td>AutoGen</td><td>Conversational multi-agent</td><td>Free-form dialogue between agents; speaker switching</td></tr>
+      <tr><td>CrewAI</td><td>Role-based (Role / Goal / Backstory)</td><td>Models business teams; fast to pick up</td></tr>
+      <tr><td>LangGraph</td><td>State-graph orchestration</td><td>Explicit control flow; observable and auditable; production-ready</td></tr>
+      <tr><td>OpenAI Swarm</td><td>Lightweight swarm collaboration</td><td>Agent handoffs; simple to implement</td></tr>
+    </table>
+
+    <h2 id="mrkl">The relationship to MRKL</h2>
+    <p>MRKL's "expert modules" are <strong>static</strong> (knowledge bases, calculators); multi-agent systems <strong>dynamize</strong> them — each agent is an expert with its own reasoning ability. The router's role is upgraded to a Manager/Orchestrator, and every node in the loop may itself be a full mini Agent Loop. <strong>In short: multi-agent = MRKL's organizational idea + ReAct's execution protocol + a composition of many loops.</strong></p>
+
+    <h2 id="challenges">Challenges: cost, convergence, and dead loops</h2>
+    <ul>
+      <li><strong>Amplified token cost</strong>: N agents passing messages multiplies cost by roughly N → cap the number of rounds and avoid pointless small talk;</li>
+      <li><strong>Convergence</strong>: debate can fail to reach agreement forever → set a max round count plus explicit termination conditions (voting, time, goal reached);</li>
+      <li><strong>Dead loops / circular references</strong>: agent A calls B, B calls A → like a single agent, you need an iteration cap, ideally with loop detection;</li>
+      <li><strong>Context amplification</strong>: if the shared blackboard is fully visible to everyone, you've just rebuilt one giant context → read/write on demand with isolated views.</li>
+    </ul>
+
+    <h2 id="conclusion">Summary</h2>
+    <blockquote><p>Multi-agent isn't "the more the better" — it's <strong>the right division of labor + explicit control flow + hard termination conditions</strong>. Decide who owns what, how they hand off, and how to stop — then pick a framework. Otherwise, the bigger the team, the faster it spins out of control.</p></blockquote>
+    <p>Related: <a href="/en/articles/agent-loop.html">The Agent Loop, explained</a> · <a href="/en/articles/langgraph-agent.html">LangGraph tutorial</a> · <a href="/en/articles/agent-safety.html">Safety and guardrails</a></p>
+
+    <div class="related">
+      <h2>Related reading</h2>
+      <ul>
+        <li><a href="/en/articles/agent-loop.html">The Agent Loop, Explained: How Agent Frameworks Really Work</a></li>
+        <li><a href="/en/articles/langgraph-agent.html">LangGraph in Practice: Build Your First Agent with StateGraph</a></li>
+        <li><a href="/en/articles/agent-safety.html">Agent Safety and Guardrails: Engineering Against Runaway Agents</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="Like this article">👍 Like <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>Share:</span>
+    <button data-share="x" aria-label="Share on X">𝕏</button>
+    <button data-share="linkedin" aria-label="Share on LinkedIn">in</button>
+    <button data-share="weibo" aria-label="Share on Weibo">微博</button>
+    <button data-share="copy" aria-label="Copy link">🔗 Link</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← Previous</a>
+  <a id="nextLink" class="pn-link hidden" href="#">Next →</a>
+</div>
+
+<section class="newsletter">
+      <h2>Subscribe to the Agent Architecture Weekly</h2>
+      <p>One focused email per week: MRKL / ReAct / Agent Loop deep dives, framework tutorials, and paper notes. No ads, unsubscribe anytime.</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">Subscribe</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architecture Learning Site</a> · <a href="/en/feed.xml">RSS</a></p>
+  </footer>
+<button id="backTop" class="back-top" aria-label="Back to top">↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

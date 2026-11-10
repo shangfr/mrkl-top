@@ -151,7 +151,7 @@
     "articles/multi-agent.html",
     "articles/agent-safety.html"
   ];
-  var here = location.pathname.replace(/^\/+/, "");
+  var here = location.pathname.replace(/^\/+/, "").replace(/^en\//, "");
   var idx = ORDER.indexOf(here);
   var prevLink = document.getElementById("prevLink");
   var nextLink = document.getElementById("nextLink");
@@ -162,7 +162,7 @@
   var randBtn = document.getElementById("randBtn");
   if (randBtn) {
     randBtn.addEventListener("click", function () {
-      location.href = "/" + ORDER[Math.floor(Math.random() * ORDER.length)];
+      location.href = (location.pathname.indexOf("/en/") === 0 ? "/en/" : "/") + ORDER[Math.floor(Math.random() * ORDER.length)];
     });
   }
 

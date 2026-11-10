@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Loop vs ReAct vs MRKL: Three Layers, One Clear Picture | MRKL.top</title>
+  <link rel="canonical" href="https://mrkl.top/en/articles/loop-vs-react-vs-mrkl.html">
+  <link rel="alternate" hreflang="zh-CN" href="https://mrkl.top/articles/loop-vs-react-vs-mrkl.html">
+  <meta name="description" content="Execution engine, decision protocol, organizational architecture — three layers that don't compete. A layered diagram and a full worked example.">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/en/">MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href="/en/#articles">Articles</a>
+        <a href="/en/#newsletter">Newsletter</a>
+        <a href="/en/articles/react-vs-mrkl.html">Comparison Series</a>
+        <a href="/" lang="zh-CN">中文</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle light/dark theme">🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label="Open menu">☰</button>
+      </div>
+    </nav>
+  </header>
+  <main class="wrap-narrow article">
+    <div class="breadcrumb"><a href="/en/">Home</a> › <a href="/en/#articles">Articles</a> › Agent Loop vs ReAct vs MRKL</div>
+    <h1>Agent Loop vs ReAct vs MRKL: Three Layers, One Clear Picture</h1>
+    <p class="lede">Let's start with a key premise: <strong>these three do not sit on the same abstraction layer — they are not three parallel options to choose from, but concepts at three different levels: "execution engine / decision protocol / organizational architecture"</strong>. Modern Agent systems typically contain all three at once.</p>
+    <p class="meta">2026-11-10 · about 6 min · Tags: Comparison / Summary</p>
+
+    <div class="toc">
+      <b>Contents</b>
+      <ul>
+        <li><a href="#position">Positioning at a Glance (One Sentence Each)</a></li>
+        <li><a href="#layers">Layered Relationship Diagram</a></li>
+        <li><a href="#table">Dimension-by-Dimension Comparison</a></li>
+        <li><a href="#example">How the Three Work Together: A Complete Example</a></li>
+        <li><a href="#analogy">An Analogy to Help You Remember</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+      </ul>
+    </div>
+
+    <h2 id="position">Positioning at a Glance (One Sentence Each)</h2>
+    <table>
+      <tr><th>Concept</th><th>Essence</th><th>Question it answers</th></tr>
+      <tr><td><strong>MRKL</strong></td><td>System architecture (static organizational scheme)</td><td>"What capabilities does the system have? Which task goes to whom?"</td></tr>
+      <tr><td><strong>ReAct</strong></td><td>Decision protocol (model output format and reasoning pattern)</td><td>"How should the model think and act at each step?"</td></tr>
+      <tr><td><strong>Agent Loop</strong></td><td>Execution engine (runtime control flow)</td><td>"How does the whole process keep advancing, and how does it terminate?"</td></tr>
+    </table>
+
+    <h2 id="layers">Layered Relationship Diagram</h2>
+    <pre><code>┌───────────────────────────────────────────────┐
+│  Agent Loop (execution engine)                 │
+│    while not terminated:                       │
+│        ┌─────────────────────────────────┐     │
+│        │  ReAct decision protocol        │     │
+│        │  (inside each round)            │     │
+│        │  Thought → Action → Obs         │     │
+│        └────────────────┬────────────────┘     │
+│                         │ call                  │
+│        ┌────────────────▼────────────────┐     │
+│        │  MRKL organizational             │     │
+│        │  architecture (tools/modules)    │     │
+│        │  Router + expert module registry │     │
+│        └─────────────────────────────────┘     │
+└───────────────────────────────────────────────┘</code></pre>
+    <p><strong>Loop is the "skeleton," ReAct is "how the brain works each round," and MRKL is "how the hands and resources are arranged."</strong></p>
+
+    <h2 id="table">Dimension-by-Dimension Comparison</h2>
+    <table>
+      <tr><th>Dimension</th><th>MRKL</th><th>ReAct</th><th>Agent Loop</th></tr>
+      <tr><td>Originator / Source</td><td>AI21 Labs (2022 paper)</td><td>Google / Princeton (2022 paper)</td><td>Engineering concept (implemented by frameworks such as LangChain)</td></tr>
+      <tr><td>Abstraction layer</td><td>Architecture layer (static)</td><td>Reasoning layer (model behavior)</td><td>Runtime layer (control flow)</td></tr>
+      <tr><td>Core components</td><td>Router + expert modules</td><td>A single LLM + tools, advanced by Thought/Action/Observation</td><td>LLM + tools + memory + termination conditions + state management</td></tr>
+      <tr><td>Decision-making approach</td><td>One-shot "triage" at the front end; tasks handed off to expert modules</td><td>The model decides autonomously at each step, with planning and execution <b>interleaved</b></td><td>Framework-driven loop; the model emits decision tokens each round</td></tr>
+      <tr><td>Error correction</td><td>Weak (hard to recover once a task is misrouted)</td><td>Strong (Observation feedback allows correction)</td><td>Depends on the internal pattern (strong when using the ReAct pattern)</td></tr>
+      <tr><td>Extensibility</td><td>Strongest (module isolation; modules can be added or removed independently)</td><td>Medium (extending = adding tool descriptions to the prompt)</td><td>Depends on implementation (state-graph-style Loops are highly extensible)</td></tr>
+      <tr><td>Explainability</td><td>Medium (routing is auditable; modules are black boxes)</td><td>Strong (the whole chain of thought is visible)</td><td>Depends on implementation (explicit state graphs are highly observable)</td></tr>
+      <tr><td>Typical scenarios</td><td>Production systems, domain-partitioned tasks</td><td>Open-ended multi-step reasoning, trial-and-error tasks</td><td>All Agent applications (a universal foundation)</td></tr>
+      <tr><td>Representative implementations</td><td>AI21 Studio, modular Agent design</td><td>ReAct prompt templates, LangChain ReAct style</td><td>LangGraph, OpenAI Agent SDK, AutoGen</td></tr>
+    </table>
+
+    <h2 id="example">How the Three Work Together: A Complete Example</h2>
+    <p>Suppose the task is: <strong>"Calculate the 30-day return of the Shanghai Composite Index and write an analysis report."</strong></p>
+    <ol>
+      <li><strong>MRKL layer (organization)</strong>: the module registry holds three expert modules — <code>stock_api</code>, <code>calculator</code>, and <code>report_writer</code>; the router (LLM) determines that the task involves data fetching + calculation + generation and hands the first two steps to the corresponding modules.</li>
+      <li><strong>Loop layer (engine)</strong>: the loop starts, iteration count = 0, context = task objective + tool descriptions.</li>
+      <li><strong>ReAct layer (per-round decisions)</strong>:
+        <pre><code>Thought: First fetch the closing prices of the last 30 days
+Action: stock_api["get_prices", "Shanghai Composite Index", 30 days]
+Observation: [3245.2, 3260.1, ..., 3310.5]
+
+Thought: Calculate return rate = (last - first) / first
+Action: calculator["return_rate", 3310.5, 3245.2]
+Observation: 0.0201
+
+Thought: Data is ready, generate the report
+Final Answer: 近30日收益率为 2.01%，...</code></pre>
+      </li>
+      <li><strong>Loop layer (wrap-up)</strong>: it detects <code>Final Answer</code> → break and returns the answer; if max_iterations is exceeded (e.g., still going in circles by round 4) → force termination to prevent an infinite loop.</li>
+    </ol>
+
+    <h2 id="analogy">An Analogy to Help You Remember</h2>
+    <p>Put all three into a "hospital" scenario:</p>
+    <ul>
+      <li><strong>MRKL = the hospital's organizational architecture</strong>: triage desk + internal medicine + surgery + lab…… (how capabilities and departments are divided);</li>
+      <li><strong>ReAct = the doctor's diagnostic approach</strong>: first consult (Thought) → order tests (Action) → review the results (Observation) → reassess, revising as you go;</li>
+      <li><strong>Agent Loop = the hospital's patient-flow engine</strong>: a closed loop of registration → triage → examination → follow-up → discharge, with timeout limits and risk controls.</li>
+    </ul>
+
+    <h2 id="conclusion">Conclusion</h2>
+    <blockquote><p><strong>MRKL decides "what the system has and who does what," ReAct decides "how the model thinks and acts each round," and Agent Loop decides "how this process keeps running and when it stops."</strong> The three stand in a complementary layering relationship, not a competitive one. The default Agent in mainstream frameworks (e.g., LangGraph + ReAct-style prompt + tool registry) is the combination of all three; the differences between frameworks are essentially differences in how these three layers are implemented in detail.</p></blockquote>
+
+    <div class="related">
+      <h2>Related Reading</h2>
+      <ul>
+        <li><a href="/en/articles/what-is-mrkl.html">What Is MRKL? Modular Reasoning, Knowledge, and Language Architecture Explained</a></li>
+        <li><a href="/en/articles/react-vs-mrkl.html">ReAct Loop vs MRKL: A Comparison of the Differences</a></li>
+        <li><a href="/en/articles/agent-loop.html">How the Agent Framework Loop Works, Explained</a></li>
+      </ul>
+    </div>
+
+    <section class="engage">
+  <button id="likeBtn" class="like-btn" aria-label="Like this article">👍 Like <span id="likeCount" data-base="0">0</span></button>
+  <div class="engage-share">
+    <span>Share:</span>
+    <button data-share="x" aria-label="Share on X">𝕏</button>
+    <button data-share="linkedin" aria-label="Share on LinkedIn">in</button>
+    <button data-share="weibo" aria-label="Share to Weibo">微博</button>
+    <button data-share="copy" aria-label="Copy link">🔗 Link</button>
+  </div>
+</section>
+<div class="pn-nav">
+  <a id="prevLink" class="pn-link hidden" href="#">← Previous</a>
+  <a id="nextLink" class="pn-link hidden" href="#">Next →</a>
+</div>
+
+<section class="newsletter">
+      <h2>Subscribe to the "Agent Architecture Weekly"</h2>
+      <p>One deep-dive email a week plus new-paper breakdowns. No ads, unsubscribe anytime.</p>
+      <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+        <input type="email" name="email" placeholder="your@email.com" required>
+        <button type="submit">Subscribe</button>
+      </form>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <p>© 2026 MRKL.top · <a href="/en/">AI Agent Architectur
