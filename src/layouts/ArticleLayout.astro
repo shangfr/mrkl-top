@@ -1,0 +1,71 @@
+---
+import type { CollectionEntry } from "astro:content";
+interface Heading { depth: number; slug: string; text: string }
+interface Props {
+  lang: "zh" | "en";
+  entry: CollectionEntry<"zh" | "en">;
+  headings: Heading[];
+  prev?: { title: string; href: string };
+  next?: { title: string; href: string };
+}
+const { lang, entry, headings, prev, next } = Astro.props;
+const zh = lang === "zh";
+const d = entry.data;
+const h2s = headings.filter(h => h.depth === 2);
+const h3s = headings.filter(h => h.depth === 3);
+const tags = d.tags.join(" / ");
+const dateStr = "2026-11-10";
+const hintHtml = zh
+  ? "订阅即表示同意接收每周邮件，随时可退订 · 也可以 <a href=\"/feed.xml\">订阅 RSS</a>"
+  : "By subscribing you agree to receive weekly emails; unsubscribe anytime · or <a href=\"/en/feed.xml\">subscribe via RSS</a>";
+---
+<div class="breadcrumb"><a href={zh ? "/" : "/en/"}>{zh ? "首页" : "Home"}</a> › <a href={zh ? "/#articles" : "/en/#articles"}>{zh ? "文章" : "Articles"}</a> › {d.title}</div>
+<main class="wrap-narrow article">
+  <h1>{d.title}</h1>
+  <p class="lede">{d.description}</p>
+  <p class="meta">{dateStr} · {zh ? "约 " : "about "}{d.minutes} {zh ? "分钟" : "min"} · {zh ? "标签" : "Tags"}: {tags}</p>
+
+  {(h2s.length > 0 || h3s.length > 0) && (
+    <div class="toc">
+      <b>{zh ? "目录" : "Contents"}</b>
+      <ul>
+        {h2s.map(h => <li><a href={"#" + h.slug}>{h.text}</a></li>)}
+        {h3s.map(h => <li class="toc-sub"><a href={"#" + h.slug}>{h.text}</a></li>)}
+      </ul>
+    </div>
+  )}
+
+  <slot />
+
+  <section class="engage">
+    <button id="likeBtn" class="like-btn" aria-label="Like this article">👍 {zh ? "点赞" : "Like"} <span id="likeCount" data-base="0">0</span></button>
+    <div class="engage-share">
+      <span>{zh ? "分享：" : "Share:"}</span>
+      <button data-share="x" aria-label="Share on X">𝕏</button>
+      <button data-share="linkedin" aria-label="Share on LinkedIn">in</button>
+      <button data-share="weibo" aria-label="Share on Weibo">微博</button>
+      <button data-share="copy" aria-label="Copy link">{zh ? "🔗 链接" : "🔗 Link"}</button>
+    </div>
+  </section>
+
+  <div class="pn-nav">
+    <a id="prevLink" class={"pn-link" + (prev ? "" : " hidden")} href={prev ? prev.href : "#"}>
+      {prev ? (zh ? "← 上一篇：" : "← Previous: ") + prev.title : ""}
+    </a>
+    <a id="nextLink" class={"pn-link" + (next ? "" : " hidden")} href={next ? next.href : "#"}>
+      {next ? (zh ? "下一篇：" : "Next: ") + next.title + " →" : ""}
+    </a>
+  </div>
+
+  <section class="newsletter">
+    <h2>{zh ? "订阅「Agent 架构周报」" : "Subscribe to the Agent Architecture Weekly"}</h2>
+    <p>{zh
+      ? "每周一封：MRKL / ReAct / Agent Loop 精讲、框架实战与新论文解读。无广告，随时退订。"
+      : "One email per week: MRKL / ReAct / Agent Loop deep dives, framework tutorials, and new paper notes. No ads, unsubscribe anytime."}</p>
+    <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+      <input type="email" name="email" placeholder="your@email.com" required>
+      <button type="submit">{zh ? "订阅" : "Subscribe"}</button>
+    </form>
+    <div class="hint" set:html={hintHtml}></div>
+  </section>
+</main>

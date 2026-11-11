@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import ArticleLayout from "../../../layouts/ArticleLayout.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const entries = (await getCollection("en")).sort((a, b) => a.data.order - b.data.order);
+  return entries.map(e => ({ params: { slug: e.id }, props: { entry: e, all: entries } }));
+}
+
+const { entry, all } = Astro.props;
+const idx = all.findIndex(x => x.id === entry.id);
+const prev = idx > 0 ? all[idx - 1] : undefined;
+const next = idx < all.length - 1 ? all[idx + 1] : undefined;
+const { Content, headings } = await render(entry);
+const slug = entry.id;
+const zhSlug = slug === "mrkl-tutorial" ? "what-is-mrkl" : slug;
+---
+<BaseLayout
+  lang="en"
+  title={entry.data.title + " | MRKL.top"}
+  description={entry.data.description}
+  canonical={"https://mrkl.top/en/articles/" + slug + ".html"}
+  alternates={[{ hreflang: "zh-CN", href: "https://mrkl.top/articles/" + zhSlug + ".html" }]}
+  switcher={{ href: "/articles/" + zhSlug + ".html", label: "中文", lang: "zh-CN" }}
+>
+  <ArticleLayout lang="en" entry={entry} headings={headings}
+    prev={prev ? { title: prev.data.title, href: "/en/articles/" + prev.id + ".html" } : undefined}
+    next={next ? { title: next.data.title, href: "/en/articles/" + next.id + ".html" } : undefined}>
+    <Content />
+  </ArticleLayout>
+</BaseLayout>

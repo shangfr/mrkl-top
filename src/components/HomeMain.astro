@@ -1,0 +1,99 @@
+---
+import type { CollectionEntry } from "astro:content";
+interface Props {
+  lang: "zh" | "en";
+  entries: CollectionEntry<"zh" | "en">[];
+  cards: Record<string, { tag: string; h3: string; p: string; dataTitle: string; dataTags: string; dataExcerpt: string }>;
+  totalMin: number;
+  heroTyperHtml: string;
+  tagPills: { label: string; href: string }[];
+  group1?: string[];
+  sec1: string;
+  sec2?: string;
+}
+const { lang, entries, cards, totalMin, heroTyperHtml, tagPills, group1, sec1, sec2 } = Astro.props;
+const zh = lang === "zh";
+const art = (s: string) => (zh ? "/articles/" + s + ".html" : "/en/articles/" + s + ".html");
+const list1 = group1 ? entries.filter(e => group1.includes(e.id)) : entries;
+const list2 = group1 ? entries.filter(e => !group1.includes(e.id)) : [];
+const dateTxt = "2026-11-10";
+const hintHtml = zh
+  ? "订阅即表示同意接收每周邮件，随时可退订 · 也可以 <a href=\"/feed.xml\">订阅 RSS</a>"
+  : "By subscribing you agree to receive weekly emails; unsubscribe anytime · or <a href=\"/en/feed.xml\">subscribe via RSS</a>";
+---
+<main class="wrap">
+  <section class="hero">
+    <span class="kicker">{zh ? "AI Agent 架构 · 中文学习站" : "AI Agent Architecture · English Edition"}</span>
+    <h1 set:html={zh ? "理解智能体的三种视角：<br>MRKL · ReAct · Agent Loop" : "Understand agents from three angles:<br>MRKL · ReAct · Agent Loop"}></h1>
+    <p class="hero-sub">{zh
+      ? "从 2022 年 MRKL 论文出发，系统拆解大模型智能体（Agent）的模块化组织、推理决策协议与运行时执行循环——概念精讲、逐层对比、论文精读，再到框架实战与安全实践。"
+      : "From the 2022 MRKL paper to production frameworks: modular organization, decision protocols, and the execution loop behind LLM agents — tutorials, layered comparisons, paper deep dives, and safety practice."}</p>
+    <p class="hero-typing"><span id="typer" data-phrases={heroTyperHtml}></span></p>
+    <div>
+      <a class="btn" href={zh ? "/articles/what-is-mrkl.html" : "/en/articles/mrkl-tutorial.html"}>{zh ? "开始阅读 →" : "Start with the MRKL Tutorial →"}</a>
+      <button id="randBtn" class="btn-ghost" type="button">{zh ? "🎲 随机一篇" : "🎲 Random article"}</button>
+    </div>
+  </section>
+
+  <div class="stats">
+    <span>📚 <b>{entries.length}</b> {zh ? "篇文章" : "English articles"}</span>
+    <span>⏱️ {zh ? "约 " : "about "}<b>{totalMin}</b> {zh ? "分钟阅读" : "min read (site-wide)"}</span>
+    <span>🆕 {zh ? "更新于 " : "Updated "}<b>{dateTxt}</b></span>
+  </div>
+
+  <div class="search-wrap">
+    <input id="searchBox" class="search-box" type="search" placeholder={zh ? "🔍 搜索文章（如：LangGraph / 记忆 / 安全…）" : "🔍 Search articles (e.g. MRKL / LangGraph / memory / safety…)"} aria-label={zh ? "搜索文章" : "Search articles"}>
+  </div>
+
+  <div class="tags">
+    {tagPills.map(p => <a class="tag-pill" href={p.href}>{p.label}</a>)}
+  </div>
+
+  <section id="articles">
+    <h2 class="sec-title">{sec1}</h2>
+    <div class="cards">
+      {list1.map(e => {
+        const c = cards[e.id];
+        return (
+          <a class="card reveal" href={art(e.id)} data-title={c.dataTitle} data-tags={c.dataTags} data-excerpt={c.dataExcerpt}>
+            <span class="tag">{c.tag}</span>
+            <h3>{c.h3}</h3>
+            <p>{c.p}</p>
+            <span class="meta">{dateTxt} · {zh ? "约 " : "about "}{e.data.minutes} {zh ? "分钟" : "min"}</span>
+          </a>
+        );
+      })}
+    </div>
+    {sec2 && (
+      <>
+        <h2 class="sec-title">{sec2}</h2>
+        <div class="cards">
+          {list2.map(e => {
+            const c = cards[e.id];
+            return (
+              <a class="card reveal" href={art(e.id)} data-title={c.dataTitle} data-tags={c.dataTags} data-excerpt={c.dataExcerpt}>
+                <span class="tag">{c.tag}</span>
+                <h3>{c.h3}</h3>
+                <p>{c.p}</p>
+                <span class="meta">{dateTxt} · {zh ? "约 " : "about "}{e.data.minutes} {zh ? "分钟" : "min"}</span>
+              </a>
+            );
+          })}
+        </div>
+      </>
+    )}
+    <div class="search-empty" id="searchEmpty">{zh ? "没有找到匹配的文章，换个关键词试试？" : "No matching articles — try a different keyword?"}</div>
+  </section>
+
+  <section class="newsletter" id="newsletter">
+    <h2>{zh ? "订阅「Agent 架构周报」" : "Subscribe to the Agent Architecture Weekly"}</h2>
+    <p>{zh
+      ? "每周一封：MRKL / ReAct / Agent Loop 精讲、框架实战与新论文解读。无广告，随时退订。"
+      : "One email per week: MRKL / ReAct / Agent Loop deep dives, framework tutorials, and new paper notes. No ads, unsubscribe anytime."}</p>
+    <form class="subscribe-form" action="https://buttondown.com/api/emails/embed-subscribe/vencen" method="post" target="_blank">
+      <input type="email" name="email" placeholder="your@email.com" required>
+      <button type="submit">{zh ? "订阅" : "Subscribe"}</button>
+    </form>
+    <div class="hint" set:html={hintHtml}></div>
+  </section>
+</main>

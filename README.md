@@ -1,65 +1,70 @@
-# MRKL.top — AI Agent 架构学习站
+# MRKL.top — Astro 重构版
 
-围绕 MRKL / ReAct / Agent Loop 等大模型智能体架构概念的中文技术内容站（路线 A）。
-纯静态站点：无需服务器、无需构建，GitHub Pages 直接托管。
+AI Agent 架构学习站（MRKL · ReAct · Agent Loop），双语（中文 / English）。纯静态站，由 **Astro** 构建，内容用 **Markdown** 编写，部署到 GitHub Pages。
 
-## 技术架构
+## 快速开始
 
-- **站点托管**：GitHub Pages（纯静态）
-- **邮件分发**：Buttondown（用户名 `vencen`，邮箱 shangfengrui@gmail.com）
-- **订阅表单**：Buttondown 公开嵌入表单（`https://buttondown.com/api/emails/embed-subscribe/vencen`）——无需服务器、无需密钥，由 Buttondown 处理订阅
-- **RSS**：本站 `feed.xml`（站点内容）；Buttondown 归档页自带 RSS
+```bash
+npm install        # 安装依赖（需要可访问 npm registry）
+npm run dev        # 本地开发 http://localhost:4321
+npm run build      # 构建到 dist/（含 postbuild 生成 /en/index.html）
+npm run preview    # 本地预览构建产物
+```
+
+## 写一篇新文章
+
+在 `src/content/zh/`（中文）或 `src/content/en/`（英文）下新建 `slug.md`：
+
+```markdown
+---
+title: "你的文章标题"
+description: "一句话摘要（会显示在卡片、meta description、RSS 里）"
+date: 2026-11-11
+minutes: 8          # 阅读时长（分钟）
+tags:
+  - 概念
+  - 对比
+lang: zh            # zh 或 en
+order: 12           # 排序编号（决定卡片顺序与上一篇/下一篇）
+---
+
+## 小节标题 {#custom-id}   ← 可选：自定义锚点 id（目录/滚动高亮用）
+
+正文 Markdown……支持表格、代码块、列表、引用、图片。
+```
+
+构建后自动生成：
+- 文章页 `/articles/slug.html`（或 `/en/articles/slug.html`）
+- 首页卡片 / 统计数字 / 上一篇下一篇
+- sitemap.xml（含双语 hreflang 配对）
+- feed.xml（zh / en 各一份 RSS）
+
+### 双语对应规则
+- 中英文文章按**同名 slug** 一一对应（如 `zh/agent-loop.md` ↔ `en/agent-loop.md`），页面互相跳转 + hreflang 配对自动完成。
+- 英文旗舰教程 `en/mrkl-tutorial.md` 对应中文 `what-is-mrkl.md`（在 `src/pages/en/articles/[slug].astro` 中有特判）。
+- 卡片展示文案（策展式标题/摘要/标签）在 `src/data/cards.ts` 维护；新文章记得补一条，否则卡片区域为空。
+
+## 部署
+
+1. 推送 main 分支 → `.github/workflows/deploy.yml` 自动构建并部署到 GitHub Pages。
+2. Pages 来源必须是 **GitHub Actions**（Settings → Pages → Build and deployment → Source: GitHub Actions）。
+3. 自定义域名 `mrkl.top`：`public/CNAME` 已包含；DNS 的 A 记录/CNMAE 保持即可。
+
+## 订阅（Buttondown）
+
+订阅表单为公开嵌入表单（`https://buttondown.com/api/emails/embed-subscribe/vencen`），**无需任何密钥**，安全。API Key 仅用于本机维护，绝不入库。
 
 ## 目录结构
 
-    ├── index.html                 # 首页（搜索/统计/标签云/打字动画/随机文章/订阅）
-    ├── 404.html
-    ├── robots.txt
-    ├── sitemap.xml
-    ├── feed.xml                   # RSS 订阅源
-    ├── .nojekyll                  # 禁用 GitHub Pages 的 Jekyll 处理
-    ├── assets/
-    │   ├── style.css              # 全站样式（青色主题 + 暗色模式）
-    │   └── app.js                 # 全站交互脚本
-    └── articles/                  # 10 篇文章
-
-## 部署到 GitHub Pages
-
-1. 在 GitHub 新建一个仓库（如 `mrkl-top`），把本目录推送上去：
-
-       git init
-       git add .
-       git commit -m "init: MRKL.top 内容站"
-       git remote add origin https://github.com/<你的用户名>/mrkl-top.git
-       git push -u origin main
-
-2. 仓库 **Settings → Pages** → Build and deployment → Source 选 **Deploy from a branch** → 分支 `main` / 目录 `/(root)` → Save；
-3. （可选）绑定自定义域名：Settings → Pages → **Custom domain** 填 `mrkl.top`，按 GitHub 提示到 DNS 加 CNAME 记录，勾选 **Enforce HTTPS**；
-4. 推送后 Pages 自动更新。
-
-## 安全说明
-
-- 站点代码里**没有任何密钥**。你的 Buttondown API Key 只用于 API 操作（如本机建邮件草稿），**切勿提交进仓库或写进任何前端文件**；
-- 订阅走 Buttondown 公开嵌入端点，由 Buttondown 后端处理，静态托管也能直接使用。
-
-## 新增文章流程
-
-1. 复制 `articles/` 下文章骨架写新文章（HTML）；
-2. 更新 `index.html` 卡片、`sitemap.xml`、`feed.xml`、`assets/app.js` 的 ORDER 数组（上/下一篇顺序）；
-3. 推送 GitHub → Pages 自动更新。
-
-## 已内置的交互与增长元素
-
-- 🌙 暗色模式切换（记忆偏好，跟随系统默认）
-- 🔍 站内实时搜索（标题/标签/摘要）
-- 📊 统计条、🏷️ 标签云、🎲 随机文章、⌨️ Hero 打字动画
-- 📈 阅读进度条、⬆️ 回到顶部、📑 目录滚动高亮
-- 📋 代码复制、👍 点赞、🔗 分享（X/LinkedIn/微博/复制链接）
-- ⬅️➡️ 上/下一篇导航、📡 RSS、📱 移动端菜单
-
-## 待办
-
-- [x] 订阅表单接入 Buttondown（公开嵌入，无密钥）
-- [ ] 接入统计（Cloudflare Web Analytics 或 Umami）
-- [ ] 英文版旗舰文章（`/en/` + hreflang），抢 "MRKL tutorial" 英文流量
-- [ ] （可选）把正文同步为 Buttondown 邮件，利用其归档页与自动 SEO 收录
+```
+astro.config.mjs        # Astro 配置（build.format: file 保持 .html URL）
+src/content/zh|en/*.md  # 文章内容（Markdown + frontmatter）
+src/content.config.ts   # 内容集合 schema
+src/layouts/            # BaseLayout / ArticleLayout
+src/components/         # HomeMain（首页各区块）
+src/pages/              # 首页 / 文章动态页 / 404 / feed / sitemap
+src/data/cards.ts       # 首页卡片展示文案
+public/assets/          # style.css + app.js（交互脚本，含暗色/搜索/点赞等）
+public/CNAME · robots.txt
+scripts/                # convert.mjs（旧 HTML→MD 迁移脚本）· remark-heading-id.mjs · postbuild.mjs
+```

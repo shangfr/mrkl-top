@@ -1,0 +1,33 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import HomeMain from "../../components/HomeMain.astro";
+import { getCollection } from "astro:content";
+import { enCards } from "../../data/cards";
+
+const articles = (await getCollection("en")).sort((a, b) => a.data.order - b.data.order);
+const totalMin = articles.reduce((s, a) => s + (a.data.minutes || 0), 0);
+const tagPills = [
+  { label: "Tutorial", href: "/en/articles/mrkl-tutorial.html" },
+  { label: "Comparison", href: "/en/articles/react-vs-mrkl.html" },
+  { label: "Paper", href: "/en/articles/mrkl-paper.html" },
+  { label: "Principles", href: "/en/articles/agent-loop.html" },
+  { label: "Tool Calling", href: "/en/articles/tool-calling.html" },
+  { label: "Hands-on", href: "/en/articles/langgraph-agent.html" },
+  { label: "Safety", href: "/en/articles/agent-safety.html" },
+];
+const typerHtml = '["MRKL · Modular Reasoning, Knowledge and Language","ReAct · Think, then act, then observe","Agent Loop · The execution engine, closed","From paper to framework, hands-on"]';
+---
+<BaseLayout
+  lang="en"
+  title="MRKL.top — AI Agent Architecture Learning Site | MRKL · ReAct · Agent Loop"
+  description="An English learning site for LLM agent architecture: MRKL (Modular Reasoning, Knowledge and Language), ReAct, and the Agent Loop — tutorials, paper deep dives, framework guides, and safety practices."
+  canonical="https://mrkl.top/en/"
+  alternates={[
+    { hreflang: "zh-CN", href: "https://mrkl.top/" },
+    { hreflang: "x-default", href: "https://mrkl.top/" },
+  ]}
+  switcher={{ href: "/", label: "中文", lang: "zh-CN" }}
+>
+  <HomeMain lang="en" entries={articles} cards={enCards} totalMin={totalMin} heroTyperHtml={typerHtml}
+    tagPills={tagPills} sec1="English Edition" />
+</BaseLayout>

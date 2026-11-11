@@ -1,12 +1,8 @@
-# 预览截图（本地查看用，不必提交）
+node_modules/
+dist/
+.astro/
+.DS_Store
 _preview_*.png
-
-# 临时文件
-_dom_dump.html
-_edge_tmp*
+_edge*/
 _server.js
-_test_*
-
-# 本地环境变量（若使用 Cloudflare Pages 本地预览）
-.dev.vars
-wrangler.toml
+*.log

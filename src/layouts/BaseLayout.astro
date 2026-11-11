@@ -1,0 +1,59 @@
+---
+interface Props {
+  lang: "zh" | "en";
+  title: string;
+  description: string;
+  canonical: string;
+  alternates: { hreflang: string; href: string }[];
+  switcher: { href: string; label: string; lang: string };
+}
+const { lang, title, description, canonical, alternates, switcher } = Astro.props;
+const zh = lang === "zh";
+const rssHref = zh ? "/feed.xml" : "/en/feed.xml";
+const rssTitle = zh ? "MRKL.top RSS" : "MRKL.top English RSS";
+---
+<!DOCTYPE html>
+<html lang={zh ? "zh-CN" : "en"}>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <link rel="canonical" href={canonical}>
+  {alternates.map(a => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
+  <link rel="alternate" type="application/rss+xml" title={rssTitle} href={"https://mrkl.top" + rssHref}>
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+</head>
+<body>
+  <div class="progress-bar" id="progressBar"></div>
+
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href={zh ? "/" : "/en/"}>MRKL<span class="dot">.</span>top</a>
+      <div class="nav-links">
+        <a href={zh ? "/#articles" : "/en/#articles"}>{zh ? "文章" : "Articles"}</a>
+        <a href={zh ? "/#newsletter" : "/en/#newsletter"}>{zh ? "订阅" : "Subscribe"}</a>
+        <a href={zh ? "/articles/react-vs-mrkl.html" : "/en/articles/react-vs-mrkl.html"}>{zh ? "对比专题" : "Comparison Series"}</a>
+        <a href={switcher.href} lang={switcher.lang}>{switcher.label}</a>
+      </div>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" aria-label={zh ? "切换明暗主题" : "Toggle light/dark theme"}>🌙</button>
+        <button id="navToggle" class="icon-btn nav-toggle" aria-label={zh ? "打开菜单" : "Open menu"}>☰</button>
+      </div>
+    </nav>
+  </header>
+
+  <slot />
+
+  <footer class="site-footer">
+    <p set:html={zh
+      ? "© 2026 MRKL.top · <a href=\"https://mrkl.top\">AI Agent 架构学习站</a> · <a href=\"/feed.xml\">RSS</a> · 内容基于公开论文与工程实践整理"
+      : "© 2026 MRKL.top · <a href=\"https://mrkl.top\">AI Agent Architecture Learning Site</a> · <a href=\"/en/feed.xml\">RSS</a> · Built from public papers and engineering practice"}></p>
+  </footer>
+
+  <button id="backTop" class="back-top" aria-label={zh ? "回到顶部" : "Back to top"}>↑</button>
+
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

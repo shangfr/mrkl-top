@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import HomeMain from "../components/HomeMain.astro";
+import { getCollection } from "astro:content";
+import { zhCards } from "../data/cards";
+
+const articles = (await getCollection("zh")).sort((a, b) => a.data.order - b.data.order);
+const totalMin = articles.reduce((s, a) => s + (a.data.minutes || 0), 0);
+const tagPills = [
+  { label: "概念", href: "/articles/what-is-mrkl.html" },
+  { label: "对比", href: "/articles/react-vs-mrkl.html" },
+  { label: "论文精读", href: "/articles/mrkl-paper.html" },
+  { label: "原理", href: "/articles/agent-loop.html" },
+  { label: "工具调用", href: "/articles/tool-calling.html" },
+  { label: "实战", href: "/articles/langgraph-agent.html" },
+  { label: "多智能体", href: "/articles/multi-agent.html" },
+  { label: "安全", href: "/articles/agent-safety.html" },
+];
+---
+<BaseLayout
+  lang="zh"
+  title="MRKL.top — AI Agent 架构学习站｜MRKL · ReAct · Agent Loop"
+  description="MRKL（Modular Reasoning, Knowledge and Language）与 ReAct、Agent Loop 等大模型智能体架构的中文学习站：概念精讲、原理拆解、论文精读、框架实战与安全实践。"
+  canonical="https://mrkl.top/"
+  alternates={[
+    { hreflang: "en", href: "https://mrkl.top/en/" },
+    { hreflang: "x-default", href: "https://mrkl.top/" },
+  ]}
+  switcher={{ href: "/en/", label: "English", lang: "en" }}
+>
+  <HomeMain lang="zh" entries={articles} cards={zhCards} totalMin={totalMin} heroTyperHtml=""
+    tagPills={tagPills}
+    group1={["what-is-mrkl", "react-vs-mrkl", "agent-loop", "loop-vs-react-vs-mrkl"]}
+    sec1="入门与对比" sec2="进阶与实战" />
+</BaseLayout>
