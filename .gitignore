@@ -6,3 +6,8 @@ _preview_*.png
 _edge*/
 _server.js
 *.log
+
+_artifact.zip
+_runlog*
+_art_ex/
+_dom*.html
